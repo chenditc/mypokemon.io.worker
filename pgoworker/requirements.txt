@@ -1,0 +1,15 @@
+Django==1.9.8
+argparse==1.2.1
+django-storages==1.4.1
+future==0.15.2
+geopy==1.11.0
+gpsoauth==0.3.0
+protobuf==3.0.0b4
+psycopg2==2.6.2
+pycryptodomex==3.4.2
+python-dateutil==2.5.3
+pytz==2016.6.1
+requests==2.10.0
+s2sphere==0.2.4
+six==1.10.0
+wsgiref==0.1.2

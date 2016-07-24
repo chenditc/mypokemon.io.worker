@@ -1,0 +1,204 @@
+#!/usr/bin/env python
+"""
+pgoapi - Pokemon Go API
+Copyright (c) 2016 tjado <https://github.com/tejado>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+Author: tjado <https://github.com/tejado>
+"""
+
+import os
+import re
+import sys
+import json
+import time
+import struct
+import math
+import pprint
+import logging
+import requests
+import argparse
+import getpass
+
+import pokemon_fort_db 
+
+# add directory of this file to PATH, so that the package will be found
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
+# import Pokemon Go API lib
+from pgoapi import pgoapi
+from pgoapi import utilities as util
+
+# other stuff
+from google.protobuf.internal import encoder
+from geopy.geocoders import GoogleV3
+from s2sphere import Cell, CellId, LatLng
+import s2sphere
+
+import random
+
+
+log = logging.getLogger(__name__)
+db = pokemon_fort_db.PokemonFortDB()
+api_client = pgoapi.PGoApi()
+
+POGO_FAILED_LOGIN = -1
+
+def get_cell_ids(lat, long, radius = 10):
+    origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
+    walk = [origin.id()]
+    right = origin.next()
+    left = origin.prev()
+
+    # Search around provided radius
+    for i in range(radius):
+        walk.append(right.id())
+        walk.append(left.id())
+        right = right.next()
+        left = left.prev()
+
+    # Return everything
+    return sorted(walk)
+
+def get_monitor_list():
+    return db.get_search_cellids(50)
+
+def get_position_from_cellid(cellid):
+    # Check if there is spawn point, if so, use it as location
+    point = db.get_first_spawn_point(cellid)
+    if point != None:
+        return point
+
+    cell = CellId(id_ = cellid).to_lat_lng()
+    return (math.degrees(cell._LatLng__coords[0]), math.degrees(cell._LatLng__coords[1]), 0)
+    
+def encode(cellid):
+    output = []
+    encoder._VarintEncoder()(output.append, cellid)
+    return ''.join(output)
+    
+   
+def query_cellid(cellid):
+    api = get_api() 
+    if api == POGO_FAILED_LOGIN:
+        return POGO_FAILED_LOGIN
+
+    position = get_position_from_cellid(cellid) 
+    api.set_position(*position)
+
+    cell_ids = [cellid] 
+    timestamps = [0]
+    api.get_map_objects(latitude = util.f2i(position[0]), longitude = util.f2i(position[1]), since_timestamp_ms = timestamps, cell_id = cell_ids)
+    
+    # execute the RPC call
+    response_dict = api.call()
+    #print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+
+    if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
+        'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
+        logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
+        # Valid scenario because no china data
+        return 0
+
+    cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    assert(len(cell_ids) == len(cells))
+
+    for cell in cells:
+        db.mark_search(cell["s2_cell_id"])
+
+        logging.getLogger("search").info(cell.keys())
+        # Add pokemon info
+        if 'catchable_pokemons' in cell:
+            for pokemon in cell['catchable_pokemons']:
+                db.add_pokemon(pokemon["encounter_id"], 
+                               pokemon["expiration_timestamp_ms"], 
+                               pokemon["pokemon_id"], 
+                               pokemon["latitude"], 
+                               pokemon["longitude"])
+            logging.getLogger("search").info("Added {0} pokemons".format(len(cell['catchable_pokemons'])))
+        if 'wild_pokemons' in cell:
+            for pokemon in cell['wild_pokemons']:
+                db.add_pokemon(pokemon["encounter_id"], 
+                               pokemon["last_modified_timestamp_ms"] + pokemon["time_till_hidden_ms"], 
+                               pokemon["pokemon_data"]["pokemon_id"], 
+                               pokemon["latitude"], 
+                               pokemon["longitude"])
+            logging.getLogger("search").info("Added {0} pokemons".format(len(cell['catchable_pokemons'])))
+
+        if 'spawn_points' in cell:
+            db.add_spawn_points(cell['s2_cell_id'], cell['spawn_points'])
+
+        if 'forts' not in cell:
+            continue
+
+        forts = cell['forts']
+        for fort in forts:
+            enabled = fort.get('enabled', False)
+            forttype = fort.get('type', None)
+            gymteam = fort.get('owned_by_team', None)
+            lure_expire = 0
+            if 'lure_info' in fort:
+                lure_expire = fort["lure_info"]["lure_expires_timestamp_ms"]
+            db.add_fort(fort['id'], cell['s2_cell_id'], enabled, fort['latitude'], fort['longitude'], lure_expire, forttype, gymteam)
+
+        logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell['s2_cell_id'], len(forts) ))
+
+    db.commit()
+    return 0
+
+# Singlton accessor
+def get_api():
+    global api_client
+    # Check if existing api is logged in
+    if api_client._auth_provider == None:
+        if not api_client.login("ptc", "fortsearcher", "fortsearcher"):
+            logging.getLogger("pgoapi").error("Failed to login") 
+            return POGO_FAILED_LOGIN;
+
+    # Check if existing api is expired
+    ticket = api_client._auth_provider.get_ticket()
+    expire_time = ticket[0] / 1000
+    if expire_time < time.time():
+        if not api_client.login("ptc", "fortsearcher", "fortsearcher"):
+            logging.getLogger("pgoapi").error("Failed to login") 
+            return POGO_FAILED_LOGIN;
+
+    return api_client
+
+
+def main():
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(module)10s] [%(levelname)5s] %(message)s')
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("pgoapi").setLevel(logging.INFO)
+    logging.getLogger("rpc_api").setLevel(logging.INFO)
+    logging.getLogger("search").setLevel(logging.INFO)
+
+    if DEBUG:
+        logging.getLogger("requests").setLevel(logging.DEBUG)
+        logging.getLogger("pgoapi").setLevel(logging.DEBUG)
+        logging.getLogger("rpc_api").setLevel(logging.DEBUG)
+        logging.getLogger("search").setLevel(logging.DEBUG)
+
+    cellid = 9926588759879450624 
+    query_cellid(cellid)
+
+if __name__ == '__main__':
+    DEBUG = True
+    main()
