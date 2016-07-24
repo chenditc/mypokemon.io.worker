@@ -1,4 +1,5 @@
 import logging
+import json
 
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -6,13 +7,8 @@ from django.http import HttpResponse, HttpResponseBadRequest
 import pogo_client
 
 def health(request):
-    data = request.GET
-    data.update(request.POST)
-    if 'cellid' not in data:
-        logging.getLogger('worker').info("No cellid specified {0}".format(data))
-        return HttpResponseBadRequest("No cellid specified")
-
     try:
+        data = json.loads(request.body) 
         cellid = int(data['cellid'])
     except:
         logging.getLogger('worker').info("Fail to parse cellid from {0}".format(data))
