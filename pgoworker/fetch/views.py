@@ -7,6 +7,7 @@ import pogo_client
 
 def health(request):
     data = request.GET
+    date.update(request.POST)
     if 'cellid' not in data:
         logging.getLogger('worker').info("No cellid specified {0}".format(data))
         return HttpResponseBadRequest("No cellid specified")
