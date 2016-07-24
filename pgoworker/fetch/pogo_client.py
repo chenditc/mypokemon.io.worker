@@ -37,7 +37,7 @@ import requests
 import argparse
 import getpass
 
-import pokemon_fort_db 
+import redis
 
 # add directory of this file to PATH, so that the package will be found
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -52,11 +52,12 @@ from geopy.geocoders import GoogleV3
 from s2sphere import Cell, CellId, LatLng
 import s2sphere
 
-import random
+import pokemon_fort_db 
 
 
 log = logging.getLogger(__name__)
 db = pokemon_fort_db.PokemonFortDB()
+redis_client = redis.StrictRedis(host='mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com', port=6379, db=0)
 api_client = pgoapi.PGoApi()
 
 POGO_FAILED_LOGIN = -1
@@ -93,7 +94,26 @@ def encode(cellid):
     output = []
     encoder._VarintEncoder()(output.append, cellid)
     return ''.join(output)
-    
+  
+def update_forts(cell_id, forts):
+    forts_info = []
+    for fort in forts:
+        enabled = fort.get('enabled', False)
+        forttype = fort.get('type', None)
+        gymteam = fort.get('owned_by_team', None)
+        lure_expire = 0
+        if 'lure_info' in fort:
+            lure_expire = fort["lure_info"]["lure_expires_timestamp_ms"]
+        db.add_fort(fort['id'], cell_id, enabled, fort['latitude'], fort['longitude'], lure_expire, forttype, gymteam)
+
+        forts_info.append({"latitude" : fort['latitude'],
+                           "longitude" : fort["longitude"],
+                           "lure" : lure_expire,
+                           "gymteam" : gymteam })
+    redis_client.setex("fort.{0}".format(cell_id), 60, json.dumps(forts_info))
+
+    logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell_id, len(forts) ))
+
    
 def query_cellid(cellid):
     api = get_api() 
@@ -118,6 +138,7 @@ def query_cellid(cellid):
         return 0
 
     cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    print cells
     assert(len(cell_ids) == len(cells))
 
     for cell in cells:
@@ -145,20 +166,8 @@ def query_cellid(cellid):
         if 'spawn_points' in cell:
             db.add_spawn_points(cell['s2_cell_id'], cell['spawn_points'])
 
-        if 'forts' not in cell:
-            continue
-
-        forts = cell['forts']
-        for fort in forts:
-            enabled = fort.get('enabled', False)
-            forttype = fort.get('type', None)
-            gymteam = fort.get('owned_by_team', None)
-            lure_expire = 0
-            if 'lure_info' in fort:
-                lure_expire = fort["lure_info"]["lure_expires_timestamp_ms"]
-            db.add_fort(fort['id'], cell['s2_cell_id'], enabled, fort['latitude'], fort['longitude'], lure_expire, forttype, gymteam)
-
-        logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell['s2_cell_id'], len(forts) ))
+        if 'forts' in cell:
+            update_forts(cell['s2_cell_id'], cell['forts'])
 
     db.commit()
     return 0
@@ -196,7 +205,7 @@ def main():
         logging.getLogger("rpc_api").setLevel(logging.DEBUG)
         logging.getLogger("search").setLevel(logging.DEBUG)
 
-    cellid = 9926588759879450624 
+    cellid = 9926585761992278016
     query_cellid(cellid)
 
 if __name__ == '__main__':
