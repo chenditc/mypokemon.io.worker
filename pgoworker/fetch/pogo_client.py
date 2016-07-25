@@ -110,7 +110,8 @@ def update_forts(cell_id, forts):
                            "longitude" : fort["longitude"],
                            "lure" : lure_expire,
                            "gymteam" : gymteam })
-    redis_client.setex("fort.{0}".format(cell_id), 60, json.dumps(forts_info))
+    # Set to update every 180 seconds
+    redis_client.setex("fort.{0}".format(cell_id), 180, json.dumps(forts_info))
 
     logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell_id, len(forts) ))
 
@@ -177,7 +178,7 @@ def get_api():
     global api_client
     # Check if existing api is logged in
     if api_client._auth_provider == None:
-        if not api_client.login("ptc", "fortsearcher", "fortsearcher"):
+        if not api_client.login("ptc", "fortsearcher1", "fortsearcher1"):
             logging.getLogger("pgoapi").error("Failed to login") 
             return POGO_FAILED_LOGIN;
 
