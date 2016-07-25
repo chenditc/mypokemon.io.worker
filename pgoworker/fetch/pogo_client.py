@@ -132,18 +132,18 @@ def query_cellid(cellid):
     timestamps = [0]
     api.get_map_objects(latitude = util.f2i(position[0]), longitude = util.f2i(position[1]), since_timestamp_ms = timestamps, cell_id = cell_ids)
    
-    try:
-        # execute the RPC call
-        response_dict = api.call()
-        #print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    # execute the RPC call
+    response_dict = api.call()
+    if 'response' not in response_dict:
+        print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
-        if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
-            'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
-            logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
-            # Valid scenario because no china data
-            return 0
-    except:
-        return refresh_api()
+
+
+    if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
+        'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
+        logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
+        # Valid scenario because no china data
+        return 0
 
     cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     assert(len(cell_ids) == len(cells))
@@ -183,6 +183,7 @@ def query_cellid(cellid):
 
 def refresh_api():
     global api_client
+    global last_login
     api_client = pgoapi.PGoApi()
     if not api_client.login("ptc", "fortsearcher1", "fortsearcher1"):
         logging.getLogger("pgoapi").error("Failed to login") 
