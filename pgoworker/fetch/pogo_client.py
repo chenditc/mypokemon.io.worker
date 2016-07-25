@@ -59,6 +59,7 @@ log = logging.getLogger(__name__)
 db = pokemon_fort_db.PokemonFortDB()
 redis_client = redis.StrictRedis(host='mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com', port=6379, db=0)
 api_client = pgoapi.PGoApi()
+last_login = 0
 
 POGO_FAILED_LOGIN = -1
 
@@ -120,8 +121,6 @@ def query_cellid(cellid):
     if exist != None:
         return 0
 
-
-
     api = get_api() 
     if api == POGO_FAILED_LOGIN:
         return POGO_FAILED_LOGIN
@@ -132,16 +131,19 @@ def query_cellid(cellid):
     cell_ids = [cellid] 
     timestamps = [0]
     api.get_map_objects(latitude = util.f2i(position[0]), longitude = util.f2i(position[1]), since_timestamp_ms = timestamps, cell_id = cell_ids)
-    
-    # execute the RPC call
-    response_dict = api.call()
-    #print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+   
+    try:
+        # execute the RPC call
+        response_dict = api.call()
+        #print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
-    if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
-        'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
-        logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
-        # Valid scenario because no china data
-        return 0
+        if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
+            'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
+            logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
+            # Valid scenario because no china data
+            return 0
+    except:
+        return refresh_api()
 
     cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
     assert(len(cell_ids) == len(cells))
@@ -179,23 +181,21 @@ def query_cellid(cellid):
     db.commit()
     return 0
 
+def refresh_api():
+    global api_client
+    api_client = pgoapi.PGoApi()
+    if not api_client.login("ptc", "fortsearcher1", "fortsearcher1"):
+        logging.getLogger("pgoapi").error("Failed to login") 
+        return POGO_FAILED_LOGIN;
+    last_login = time.time()
+    return 0;
+
+
 # Singlton accessor
 def get_api():
-    global api_client
-    # Check if existing api is logged in
-    if api_client._auth_provider == None:
-        if not api_client.login("ptc", "fortsearcher1", "fortsearcher1"):
-            logging.getLogger("pgoapi").error("Failed to login") 
-            return POGO_FAILED_LOGIN;
-
-    # Check if existing api is expired
-    ticket = api_client._auth_provider.get_ticket()
-    expire_time = ticket[0] / 1000
-    if expire_time < time.time():
-        if not api_client.login("ptc", "fortsearcher", "fortsearcher"):
-            logging.getLogger("pgoapi").error("Failed to login") 
-            return POGO_FAILED_LOGIN;
-
+    if time.time() - last_login > 1700:
+        rcode = refresh_api()
+        logging.getLogger("worker").info("Api refreshed")
     return api_client
 
 
@@ -214,6 +214,8 @@ def main():
 
     cellid = 9926585761992278016
     query_cellid(cellid)
+    query_cellid(cellid)
+
 
 if __name__ == '__main__':
     DEBUG = True
