@@ -110,13 +110,18 @@ def update_forts(cell_id, forts):
                            "longitude" : fort["longitude"],
                            "lure" : lure_expire,
                            "gymteam" : gymteam })
-    # Set to update every 180 seconds
-    redis_client.setex("fort.{0}".format(cell_id), 180, json.dumps(forts_info))
 
     logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell_id, len(forts) ))
 
    
 def query_cellid(cellid):
+    # Skip fresh cell
+    exist = redis_client.get(cellid)
+    if exist != None:
+        return 0
+
+
+
     api = get_api() 
     if api == POGO_FAILED_LOGIN:
         return POGO_FAILED_LOGIN
@@ -139,11 +144,12 @@ def query_cellid(cellid):
         return 0
 
     cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-    print cells
     assert(len(cell_ids) == len(cells))
 
     for cell in cells:
-        db.mark_search(cell["s2_cell_id"])
+        # Set to update every 180 seconds
+        redis_client.setex("{0}".format(cell['s2_cell_id']), 30, '1')
+
 
         logging.getLogger("search").info(cell.keys())
         # Add pokemon info

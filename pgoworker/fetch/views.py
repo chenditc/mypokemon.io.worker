@@ -14,6 +14,9 @@ def query(request):
         logging.getLogger('worker').info("Fail to parse cellid from {0}".format(data))
         return HttpResponseBadRequest("Fail to parse cellid from {0}".format(data))
 
+    # Filter the ones that already refreshed
+    
+
     for cell_id in cell_ids:
         rcode = pogo_client.query_cellid(cell_id)
         if rcode != 0:
