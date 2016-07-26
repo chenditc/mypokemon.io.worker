@@ -185,7 +185,9 @@ def refresh_api():
     global api_client
     global last_login
     api_client = pgoapi.PGoApi()
-    if not api_client.login("ptc", "fortsearcher1", "fortsearcher1"):
+    username = os.environ.get("username")
+    password = os.environ.get("password")
+    if not api_client.login("ptc", username, password):
         logging.getLogger("pgoapi").error("Failed to login") 
         return POGO_FAILED_LOGIN;
     last_login = time.time()
