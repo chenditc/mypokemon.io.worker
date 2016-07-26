@@ -62,6 +62,7 @@ api_client = pgoapi.PGoApi()
 last_login = 0
 
 POGO_FAILED_LOGIN = -1
+API_FAILED = -2
 
 def get_cell_ids(lat, long, radius = 10):
     origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
@@ -134,6 +135,12 @@ def query_cellid(cellid):
    
     # execute the RPC call
     response_dict = api.call()
+
+    if response_dict == False:
+        logging.getLogger("worker").info("Failed to call api")
+        refresh_api()
+        return API_FAILED 
+
     if 'response' not in response_dict:
         print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
