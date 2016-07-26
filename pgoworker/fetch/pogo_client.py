@@ -137,8 +137,6 @@ def query_cellid(cellid):
     if 'response' not in response_dict:
         print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
-
-
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
         logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
@@ -196,9 +194,12 @@ def refresh_api():
 
 # Singlton accessor
 def get_api():
-    if time.time() - last_login > 1700:
+    if api_client._auth_provider is None or not api_client._auth_provider.is_login():
         rcode = refresh_api()
-        logging.getLogger("worker").info("Api refreshed")
+        if rcode == 0:
+            logging.getLogger("worker").info("Api refreshed")
+        else:
+            logging.getLogger("worker").info("Failed to refresh api with rcode {0}".format(rcode))
     return api_client
 
 
