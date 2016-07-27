@@ -58,8 +58,6 @@ import pokemon_fort_db
 log = logging.getLogger(__name__)
 db = pokemon_fort_db.PokemonFortDB()
 redis_client = redis.StrictRedis(host='mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com', port=6379, db=0)
-api_client = pgoapi.PGoApi()
-last_login = 0
 
 POGO_FAILED_LOGIN = -1
 API_FAILED = -2
@@ -116,15 +114,11 @@ def update_forts(cell_id, forts):
     logging.getLogger("search").info("Updated cellid: {0} with {1} forts".format(cell_id, len(forts) ))
 
    
-def query_cellid(cellid):
+def query_cellid(cellid, api):
     # Skip fresh cell
     exist = redis_client.get(cellid)
     if exist != None:
         return 0
-
-    api = get_api() 
-    if api == POGO_FAILED_LOGIN:
-        return POGO_FAILED_LOGIN
 
     position = get_position_from_cellid(cellid) 
     api.set_position(*position)
@@ -138,7 +132,6 @@ def query_cellid(cellid):
 
     if response_dict == False:
         logging.getLogger("worker").info("Failed to call api")
-        refresh_api()
         return API_FAILED 
 
     if 'response' not in response_dict:
@@ -186,28 +179,18 @@ def query_cellid(cellid):
     db.commit()
     return 0
 
-def refresh_api():
-    global api_client
-    global last_login
-    api_client = pgoapi.PGoApi()
-    username = os.environ.get("username")
-    password = os.environ.get("password")
-    if not api_client.login("ptc", username, password):
-        logging.getLogger("pgoapi").error("Failed to login") 
-        return POGO_FAILED_LOGIN;
-    last_login = time.time()
-    return 0;
+class CellWorker(object):
+    def __init__(self):
+        username = os.environ.get("username")
+        password = os.environ.get("password")
 
+        self.api_client = pgoapi.PGoApi()
+        if not self.api_client.login("ptc", username, password):
+            logging.getLogger("pgoapi").error("Failed to login") 
+            return POGO_FAILED_LOGIN;
 
-# Singlton accessor
-def get_api():
-    if api_client._auth_provider is None or not api_client._auth_provider.is_login():
-        rcode = refresh_api()
-        if rcode == 0:
-            logging.getLogger("worker").info("Api refreshed")
-        else:
-            logging.getLogger("worker").info("Failed to refresh api with rcode {0}".format(rcode))
-    return api_client
+    def query_cellid(self, cellid):
+        return query_cellid(cellid, self.api_client)
 
 
 def main():
@@ -223,9 +206,10 @@ def main():
         logging.getLogger("rpc_api").setLevel(logging.DEBUG)
         logging.getLogger("search").setLevel(logging.DEBUG)
 
+    worker = CellWorker() 
     cellid = 9926585761992278016
-    query_cellid(cellid)
-    query_cellid(cellid)
+    worker.query_cellid(cellid)
+    worker.query_cellid(cellid)
 
 
 if __name__ == '__main__':
