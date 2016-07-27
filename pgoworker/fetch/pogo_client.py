@@ -139,7 +139,7 @@ def query_cellid(cellid, api):
 
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
-        logging.getLogger("search").info("Failed to get map object from cell: {0}",format(cellid)) 
+        logging.getLogger("search").info("Failed to get map object from cell: {0}".format(cellid)) 
         # Valid scenario because no china data
         return 0
 
@@ -206,10 +206,9 @@ def main():
         logging.getLogger("search").setLevel(logging.DEBUG)
 
     worker = CellWorker() 
-    cellid = 9926585761992278016
+#    cellid = 9926593653994684416
+    cellid = 9926593653843986945
     worker.query_cellid(cellid)
-    worker.query_cellid(cellid)
-
 
 if __name__ == '__main__':
     DEBUG = True

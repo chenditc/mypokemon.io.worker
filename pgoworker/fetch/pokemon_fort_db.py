@@ -1,4 +1,6 @@
 import time
+import os
+import math
 
 import psycopg2
 import s2sphere
@@ -46,8 +48,9 @@ class PokemonFortDB(object):
             return
 
         for point in spawn_points:
-            latitude = point["latitude"]
-            longitude = point["longitude"]
+            # Round to 200 feet
+            latitude = math.ceil(point["latitude"] * 2000) / 2000
+            longitude = math.ceil(point["longitude"] * 2000) / 2000
             cur = self.conn.cursor()
             cur.execute("INSERT INTO spawn_point_map (cellid, latitude, longitude, last_check)" +  
                         " VALUES (%s, %s, %s, %s) ON CONFLICT (latitude, longitude) DO NOTHING",
