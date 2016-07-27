@@ -63,6 +63,7 @@ redis_client = redis.StrictRedis(host=REDIS_HOST, port=6379, db=0)
 
 POGO_FAILED_LOGIN = -1
 API_FAILED = -2
+SERVER_ERROR = -3
 
 def get_cell_ids(lat, long, radius = 10):
     origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
@@ -134,10 +135,13 @@ def query_cellid(cellid, api):
 
     if 'response' not in response_dict:
         print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    if response_dict['status_code'] != 2:
+        logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
+        return SERVER_ERROR 
 
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
-        logging.getLogger("search").info("Failed to get map object from cell: {0}".format(cellid)) 
+        logging.getLogger("worker").info("Failed to get map object from cell: {0}".format(cellid)) 
         # Valid scenario because no china data
         return 0
 
@@ -145,9 +149,6 @@ def query_cellid(cellid, api):
     assert(len(cell_ids) == len(cells))
 
     for cell in cells:
-
-
-        logging.getLogger("search").info(cell.keys())
         # Add pokemon info
         if 'catchable_pokemons' in cell:
             for pokemon in cell['catchable_pokemons']:

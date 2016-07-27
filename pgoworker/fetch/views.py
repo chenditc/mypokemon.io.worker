@@ -22,6 +22,6 @@ def query(request):
     for cell_id in cell_ids:
         rcode = worker.query_cellid(cell_id)
         if rcode != 0:
-            logging.getLogger('worker').info("Failed to query cell id {0}".format(cell_id))
+            logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
             return HttpResponseBadRequest("Failed to query cell id, rcode {0}".format(rcode))
     return HttpResponse("OK")
