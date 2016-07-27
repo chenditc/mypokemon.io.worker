@@ -45,7 +45,7 @@ class PokemonFortDB(object):
             longitude = point["longitude"]
             cur = self.conn.cursor()
             cur.execute("INSERT INTO spawn_point_map (cellid, latitude, longitude, last_check)" +  
-                        " VALUES (%s, %s, %s, %s)",
+                        " VALUES (%s, %s, %s, %s) ON CONFLICT (latitude, longitude) DO NOTHING",
                 (cellid, latitude, longitude, now))
         self.conn.commit()
 
