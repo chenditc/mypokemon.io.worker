@@ -57,7 +57,9 @@ import pokemon_fort_db
 
 log = logging.getLogger(__name__)
 db = pokemon_fort_db.PokemonFortDB()
-redis_client = redis.StrictRedis(host='mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com', port=6379, db=0)
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com')
+redis_client = redis.StrictRedis(host=REDIS_HOST, port=6379, db=0)
 
 POGO_FAILED_LOGIN = -1
 API_FAILED = -2
@@ -115,10 +117,6 @@ def update_forts(cell_id, forts):
 
    
 def query_cellid(cellid, api):
-    # Skip fresh cell
-    exist = redis_client.get(cellid)
-    if exist != None:
-        return 0
 
     position = get_position_from_cellid(cellid) 
     api.set_position(*position)
@@ -147,8 +145,6 @@ def query_cellid(cellid, api):
     assert(len(cell_ids) == len(cells))
 
     for cell in cells:
-        # Set to update every 180 seconds
-        redis_client.setex("{0}".format(cell['s2_cell_id']), 30, '1')
 
 
         logging.getLogger("search").info(cell.keys())
@@ -181,15 +177,27 @@ def query_cellid(cellid, api):
 
 class CellWorker(object):
     def __init__(self):
-        username = os.environ.get("username")
-        password = os.environ.get("password")
-
-        self.api_client = pgoapi.PGoApi()
-        if not self.api_client.login("ptc", username, password):
-            logging.getLogger("pgoapi").error("Failed to login") 
+        self.api_client = None
 
     def query_cellid(self, cellid):
-        return query_cellid(cellid, self.api_client)
+        if redis_client.get(cellid) != None:
+            return
+
+        if self.api_client == None:
+            self.api_client = pgoapi.PGoApi()
+            username = os.environ.get("username")
+            password = os.environ.get("password")
+            if not self.api_client.login("ptc", username, password):
+                logging.getLogger("pgoapi").error("Failed to login") 
+                return POGO_FAILED_LOGIN
+
+        rcode = query_cellid(cellid, self.api_client)
+
+        if rcode == 0:
+            # Set to update every 60 seconds
+            redis_client.setex(cellid, 60, '1')
+
+        return rcode 
 
 
 def main():
