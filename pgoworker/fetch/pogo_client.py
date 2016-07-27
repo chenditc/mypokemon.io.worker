@@ -187,7 +187,6 @@ class CellWorker(object):
         self.api_client = pgoapi.PGoApi()
         if not self.api_client.login("ptc", username, password):
             logging.getLogger("pgoapi").error("Failed to login") 
-            return POGO_FAILED_LOGIN;
 
     def query_cellid(self, cellid):
         return query_cellid(cellid, self.api_client)
