@@ -157,6 +157,18 @@ class PokemonFortDB(object):
 # utility
 ############################################################################################################
 
+    def get_searcher_account(self):
+        cur = self.conn.cursor()
+        cur.execute("SELECT username, password " +  
+                    " FROM searcher_account" + 
+                    " ORDER BY RANDOM()" +  # Visited last hour
+                    " LIMIT 1")
+        username, password = cur.fetchone()
+        return username, password
+
+
 
     def commit(self):
         self.conn.commit()
+
+

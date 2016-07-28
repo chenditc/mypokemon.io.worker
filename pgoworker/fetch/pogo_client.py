@@ -135,7 +135,7 @@ def query_cellid(cellid, api):
 
     if 'response' not in response_dict:
         print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
-    if response_dict['status_code'] != 2:
+    if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
         return SERVER_ERROR 
 
@@ -186,8 +186,7 @@ class CellWorker(object):
 
         if self.api_client == None:
             self.api_client = pgoapi.PGoApi()
-            username = os.environ.get("username")
-            password = os.environ.get("password")
+            username, password = db.get_searcher_account()
             if not self.api_client.login("ptc", username, password):
                 logging.getLogger("pgoapi").error("Failed to login") 
                 return POGO_FAILED_LOGIN
