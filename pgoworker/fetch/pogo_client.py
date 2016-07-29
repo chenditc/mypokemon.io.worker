@@ -213,6 +213,9 @@ class CellWorker(object):
         return 0
 
     def query_cellid(self, cellid):
+        # Double check if the cell already queried, 
+        # since there might be race condition
+        # It's cheaper to check redis than call the api and parse
         if redis_client.get(cellid) != None:
             return 0
 
@@ -232,7 +235,14 @@ class CellWorker(object):
 
     def query_cell_ids(self, cell_ids):
         fail_count = 0
-        for cell_id in cell_ids:
+
+        # Prefetch existence info, as we might skip most of the cell if it's warmed up.
+        cell_exist = redis_client.mget(cell_ids)
+        for index in range(len(cell_ids)):
+            if cell_exist[index] != None:
+                continue
+
+            cell_id = cell_ids[index]
             rcode = self.query_cellid(cell_id)
             if rcode != 0:
                 fail_count += 1
