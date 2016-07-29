@@ -132,9 +132,9 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-#    if 'responses' not in response_dict:
-#        print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
-    if response_dict['status_code'] > 10 and response_dict['status_code'] != 52:
+    print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+
+    if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
         return SERVER_ERROR 
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
@@ -197,7 +197,7 @@ class CellWorker(object):
 
         login_info = json.loads(login_info)
         # Refresh login every 15 minutes
-        if login_info.login_time + 900 > time.time():
+        if login_info["login_time"] + 900 > time.time():
             return self.create_and_login_user(username, password)
 
         # Load login info
@@ -264,8 +264,8 @@ def main():
         logging.getLogger("search").setLevel(logging.DEBUG)
 
     worker = CellWorker() 
-#    cellid = 9926593653994684416
-    cellid = 9926593653843986945
+#    cellid = 9926593653843986945
+    cellid = 9926594348437209088
     worker.query_cellid(cellid)
     worker.query_cell_ids([cellid])
 
