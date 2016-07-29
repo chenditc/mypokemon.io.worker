@@ -118,7 +118,6 @@ def update_forts(cell_id, forts):
 
    
 def query_cellid(cellid, api):
-
     position = get_position_from_cellid(cellid) 
     api.set_position(*position)
 
@@ -133,12 +132,11 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    if 'response' not in response_dict:
-        print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
-    if response_dict['status_code'] > 10:
+#    if 'responses' not in response_dict:
+#        print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    if response_dict['status_code'] > 10 and response_dict['status_code'] != 52:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
         return SERVER_ERROR 
-
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
         logging.getLogger("worker").info("Failed to get map object from cell: {0}".format(cellid)) 
@@ -146,8 +144,6 @@ def query_cellid(cellid, api):
         return 0
 
     cells = response_dict['responses']['GET_MAP_OBJECTS']['map_cells']
-    assert(len(cell_ids) == len(cells))
-
     for cell in cells:
         # Add pokemon info
         if 'catchable_pokemons' in cell:
@@ -218,6 +214,7 @@ class CellWorker(object):
         # It's cheaper to check redis than call the api and parse
         if redis_client.get(cellid) != None:
             return 0
+        print "Redis:", redis_client.get(cellid)
 
         if self.api_client == None:
             rcode = self.init_api_client() 
@@ -230,6 +227,9 @@ class CellWorker(object):
         if rcode == 0:
             # Set to update every 60 seconds
             redis_client.setex(cellid, 60, '1')
+        else:
+            print "Redis not set"
+            print rcode
 
         return rcode 
 

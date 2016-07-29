@@ -1,5 +1,7 @@
 import logging
 import json
+import sys
+import s2sphere
 
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -20,6 +22,7 @@ def query(request):
         rect = s2sphere.LatLngRect.from_point_pair(p1, p2)
         area = rect.area() * 1000 * 1000
 
+
         # If area is too large, do nothing
         if area > 0.85:
             return HttpResponse("Too large, no process.")
@@ -35,6 +38,7 @@ def query(request):
         cell_ids = [ cell.id() for cell in cells ]
     except:
         logging.getLogger('worker').info("Fail to parse cellid from {0}".format(data))
+        print sys.exc_info()[0]
         return HttpResponseBadRequest("Fail to parse cellid from {0}".format(data))
 
     if len(cell_ids) == 0:
