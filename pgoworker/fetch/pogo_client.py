@@ -45,6 +45,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 # import Pokemon Go API lib
 from pgoapi import pgoapi
 from pgoapi import utilities as util
+from pgoapi.auth_ptc import AuthPtc
 
 # other stuff
 from google.protobuf.internal import encoder
@@ -132,7 +133,7 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    # print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  

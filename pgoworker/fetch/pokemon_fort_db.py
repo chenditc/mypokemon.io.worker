@@ -174,6 +174,25 @@ class PokemonFortDB(object):
                     " WHERE username = %s;", (logininfo, time.time(), username))
         self.conn.commit()
 
+    def add_searcher(self, username):
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO searcher_account (username, password, lastused, failcount)" +  
+                    " VALUES (%s, %s, %s, %s)" +
+                    " ON CONFLICT (username) DO NOTHING",
+            (username, username, 0, 0))
+        self.conn.commit()
+
+    def get_all_searcher_account(self):
+        cur = self.conn.cursor()
+        cur.execute("SELECT username " +  
+                    " FROM searcher_account")
+        rows = cur.fetchall()
+        usernames = [ row[0] for row in rows]
+        return usernames 
+
+
+
+
     def commit(self):
         self.conn.commit()
 
