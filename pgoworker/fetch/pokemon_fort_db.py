@@ -159,16 +159,21 @@ class PokemonFortDB(object):
 
     def get_searcher_account(self):
         cur = self.conn.cursor()
-        cur.execute("SELECT username, password " +  
+        cur.execute("SELECT username, password, logininfo " +  
                     " FROM searcher_account" + 
                     " ORDER BY RANDOM()" +  # Visited last hour
                     " LIMIT 1")
-        username, password = cur.fetchone()
-        return username, password
+        username, password, logininfo = cur.fetchone()
+        return (username, password, logininfo) 
 
-
+    def update_searcher_account_login_info(self, username, logininfo):
+        cur = self.conn.cursor()
+        cur.execute("UPDATE searcher_account " + 
+                    " SET logininfo = %s, " + 
+                    " lastused = %s " + 
+                    " WHERE username = %s;", (logininfo, time.time(), username))
+        self.conn.commit()
 
     def commit(self):
         self.conn.commit()
-
 

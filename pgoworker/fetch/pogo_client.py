@@ -180,16 +180,47 @@ class CellWorker(object):
     def __init__(self):
         self.api_client = None
 
+    def create_and_login_user(self, username, password):
+        self.api_client = pgoapi.PGoApi()
+        if not self.api_client.login("ptc", username, password):
+            logging.getLogger("pgoapi").error("Failed to login") 
+            return POGO_FAILED_LOGIN
+        # Save login info
+        login_info = { "token" : self.api_client._auth_provider._auth_token,
+                       "api_endpoint" : self.api_client._api_endpoint,
+                       "login_time" : time.time()}
+        db.update_searcher_account_login_info(username, json.dumps(login_info))
+        return 0
+
+
+    def init_api_client(self):
+        username, password, login_info = db.get_searcher_account()
+
+        if login_info == None:
+            return self.create_and_login_user(username, password)
+
+        login_info = json.loads(login_info)
+        # Refresh login every 15 minutes
+        if login_info.login_time + 900 > time.time():
+            return self.create_and_login_user(username, password)
+
+        # Load login info
+        self.api_client = pgoapi.PGoApi() 
+        self.api_client._auth_provider = AuthPtc()
+        self.api_client._auth_provider._auth_token = login_info["token"]
+        self.api_client._auth_provider._login = True
+        self.api_client._api_endpoint = login_info["api_endpoint"]
+        return 0
+
     def query_cellid(self, cellid):
         if redis_client.get(cellid) != None:
             return
 
         if self.api_client == None:
-            self.api_client = pgoapi.PGoApi()
-            username, password = db.get_searcher_account()
-            if not self.api_client.login("ptc", username, password):
-                logging.getLogger("pgoapi").error("Failed to login") 
-                return POGO_FAILED_LOGIN
+            rcode = self.init_api_client() 
+            if rcode != 0:
+                logging.getLogger("worker").info("Failed to refresh api client")
+                return rcode
 
         rcode = query_cellid(cellid, self.api_client)
 
