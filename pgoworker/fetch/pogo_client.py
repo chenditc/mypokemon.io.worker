@@ -214,7 +214,7 @@ class CellWorker(object):
 
     def query_cellid(self, cellid):
         if redis_client.get(cellid) != None:
-            return
+            return 0
 
         if self.api_client == None:
             rcode = self.init_api_client() 
@@ -229,6 +229,15 @@ class CellWorker(object):
             redis_client.setex(cellid, 60, '1')
 
         return rcode 
+
+    def query_cell_ids(self, cell_ids):
+        fail_count = 0
+        for cell_id in cell_ids:
+            rcode = self.query_cellid(cell_id)
+            if rcode != 0:
+                fail_count += 1
+                logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
+        return fail_count
 
 
 def main():
@@ -248,6 +257,7 @@ def main():
 #    cellid = 9926593653994684416
     cellid = 9926593653843986945
     worker.query_cellid(cellid)
+    worker.query_cell_ids([cellid])
 
 if __name__ == '__main__':
     DEBUG = True

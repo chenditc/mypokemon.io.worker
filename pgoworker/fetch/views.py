@@ -19,9 +19,8 @@ def query(request):
 
     # Filter the ones that already refreshed
     worker = CellWorker()
-    for cell_id in cell_ids:
-        rcode = worker.query_cellid(cell_id)
-        if rcode != 0:
-            logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
-            return HttpResponseBadRequest("Failed to query cell id, rcode {0}".format(rcode))
+    fail_count = worker.query_cell_ids(cell_ids)
+    # If 80% of cell failed, return bad response
+    if fail_count > (len(cell_ids) * 0.8):
+        return HttpResponseBadRequest("Too many failed cell. Total fail count: {0}".format(fail_count))
     return HttpResponse("OK")
