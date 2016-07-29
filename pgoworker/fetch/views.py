@@ -8,8 +8,31 @@ from pogo_client import CellWorker
 
 def query(request):
     try:
-        cell_ids = json.loads(request.body) 
-        cell_ids = [ int(cell_id) for cell_id in cell_ids ]
+        data = json.loads(request.body) 
+        west = float(data["west"])
+        north = float(data["north"])
+        east = float(data["east"])
+        south = float(data["south"])
+        target = data["target"]
+
+        p1 = s2sphere.LatLng.from_degrees(north, west); 
+        p2 = s2sphere.LatLng.from_degrees(south, east);
+        rect = s2sphere.LatLngRect.from_point_pair(p1, p2)
+        area = rect.area() * 1000 * 1000
+
+        # If area is too large, do nothing
+        if area > 0.85:
+            return HttpResponse("Too large, no process.")
+
+        cover = s2sphere.RegionCoverer()
+        cover.max_cells = 200
+        cover.max_level = 15
+        cover.min_level = 15
+        if target == "pokemon":
+            cover.max_level = 16
+        cells = cover.get_covering(rect)
+
+        cell_ids = [ cell.id() for cell in cells ]
     except:
         logging.getLogger('worker').info("Fail to parse cellid from {0}".format(data))
         return HttpResponseBadRequest("Fail to parse cellid from {0}".format(data))
