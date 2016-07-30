@@ -37,7 +37,6 @@ import requests
 import argparse
 import getpass
 
-import redis
 
 # add directory of this file to PATH, so that the package will be found
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -58,9 +57,6 @@ import pokemon_fort_db
 
 log = logging.getLogger(__name__)
 db = pokemon_fort_db.PokemonFortDB()
-
-REDIS_HOST = os.environ.get('REDIS_HOST', 'mypokemon-io.qha7wz.ng.0001.usw2.cache.amazonaws.com')
-redis_client = redis.StrictRedis(host=REDIS_HOST, port=6379, db=0)
 
 POGO_FAILED_LOGIN = -1
 API_FAILED = -2
@@ -210,13 +206,6 @@ class CellWorker(object):
         return 0
 
     def query_cellid(self, cellid):
-        # Double check if the cell already queried, 
-        # since there might be race condition
-        # It's cheaper to check redis than call the api and parse
-        if redis_client.get(cellid) != None:
-            return 0
-        print "Redis:", redis_client.get(cellid)
-
         if self.api_client == None:
             rcode = self.init_api_client() 
             if rcode != 0:
@@ -224,30 +213,18 @@ class CellWorker(object):
                 return rcode
 
         rcode = query_cellid(cellid, self.api_client)
-
-        if rcode == 0:
-            # Set to update every 60 seconds
-            redis_client.setex(cellid, 60, '1')
-        else:
-            print "Redis not set"
-            print rcode
-
         return rcode 
 
     def query_cell_ids(self, cell_ids):
         fail_count = 0
 
         # Prefetch existence info, as we might skip most of the cell if it's warmed up.
-        cell_exist = redis_client.mget(cell_ids)
-        for index in range(len(cell_ids)):
-            if cell_exist[index] != None:
-                continue
-
-            cell_id = cell_ids[index]
+        for cell_id in cell_ids:
             rcode = self.query_cellid(cell_id)
             if rcode != 0:
                 fail_count += 1
                 logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
+            time.sleep(0.3)
         return fail_count
 
 
