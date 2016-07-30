@@ -187,7 +187,7 @@ class CellWorker(object):
         return 0
 
 
-    def init_api_client(self):
+    def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
 
         if login_info == None:
@@ -195,7 +195,7 @@ class CellWorker(object):
 
         login_info = json.loads(login_info)
         # Refresh login every 15 minutes
-        if login_info["login_time"] + 900 > time.time():
+        if login_info["login_time"] + 900 < time.time() or force_login:
             return self.create_and_login_user(username, password)
 
         # Load login info
@@ -214,6 +214,15 @@ class CellWorker(object):
                 return rcode
 
         rcode = query_cellid(cellid, self.api_client)
+
+#        # Retry once by force login
+#        if rcode != 0:
+#            rcode = self.init_api_client(force_login=True) 
+#            if rcode != 0:
+#                logging.getLogger("worker").info("Failed to refresh api client")
+#                return rcode
+#            rcode = query_cellid(cellid, self.api_client)
+
         return rcode 
 
     def query_cell_ids(self, cell_ids):
