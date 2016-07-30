@@ -71,8 +71,8 @@ def query(request):
             cell_ids = data
 
     except:
-        logging.getLogger('worker').info("Fail to parse cellid from {0}".format(data))
-        print sys.exc_info()[0]
+        logging.getLogger('worker').error("Fail to parse cellid from {0}".format(data))
+        logging.getLogger('worker').error(str(sys.exc_info()[0]))
         return HttpResponseBadRequest("Fail to parse cellid from {0}".format(data))
 
     # If cell id size is greater than 20, break it down to smaller pieces and resend to queue
