@@ -24,6 +24,7 @@ def get_cell_ids_from_rect(data):
     north = float(data["north"])
     east = float(data["east"])
     south = float(data["south"])
+    target = data["target"]
 
     p1 = s2sphere.LatLng.from_degrees(north, west); 
     p2 = s2sphere.LatLng.from_degrees(south, east);
@@ -50,9 +51,10 @@ def filter_duplciate_cell_ids(cell_ids):
     cell_exist = redis_client.mget(redis_query)
     new_cell_ids = []
     for index in range(len(cell_ids)):
-        if cell_exist[index] != None:
+        if cell_exist[index] == None:
             new_cell_ids.append(cell_ids[index])
-            redis_client.setex(cell_ids[index], 60, '1')
+            redis_client.setex(redis_query[index], 60, '1')
+    return new_cell_ids
 
 def query(request):
     try:
@@ -72,7 +74,7 @@ def query(request):
 
     except:
         logging.getLogger('worker').error("Fail to parse cellid from {0}".format(data))
-        logging.getLogger('worker').error(str(sys.exc_info()[0]))
+        logging.getLogger('worker').error(str(sys.exc_info()))
         return HttpResponseBadRequest("Fail to parse cellid from {0}".format(data))
 
     # If cell id size is greater than 20, break it down to smaller pieces and resend to queue

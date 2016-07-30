@@ -133,6 +133,7 @@ def query_cellid(cellid, api):
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
+        logging.getLogger("worker").error(json.dumps(response_dict, indent=2))
         return SERVER_ERROR 
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
