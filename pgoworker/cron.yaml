@@ -1,0 +1,5 @@
+version: 1
+cron:
+ - name: "activate pending account"
+   url: "/activate"
+   schedule: "*/10 * * * *"

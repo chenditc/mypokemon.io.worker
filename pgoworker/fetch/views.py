@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
 
 from pogo_client import CellWorker
+from activate_account import poll_email_and_process
 
 def query(request):
     try:
@@ -21,7 +22,6 @@ def query(request):
         p2 = s2sphere.LatLng.from_degrees(south, east);
         rect = s2sphere.LatLngRect.from_point_pair(p1, p2)
         area = rect.area() * 1000 * 1000
-
 
         # If area is too large, do nothing
         if area > 0.85:
@@ -51,3 +51,8 @@ def query(request):
     if fail_count > (len(cell_ids) * 0.8):
         return HttpResponseBadRequest("Too many failed cell. Total fail count: {0}".format(fail_count))
     return HttpResponse("OK")
+
+def activate(request):
+    poll_email_and_process()
+    return HttpResponse("OK")
+
