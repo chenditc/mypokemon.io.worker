@@ -39,7 +39,8 @@ def get_cell_ids_from_rect(data):
     cover.max_cells = 200
     cover.max_level = 15
     cover.min_level = 15
-    if target == "pokemon":
+    if target == "pokemon" and area < 0.015:
+        cover.min_level = 16
         cover.max_level = 16
     cells = cover.get_covering(rect)
 
