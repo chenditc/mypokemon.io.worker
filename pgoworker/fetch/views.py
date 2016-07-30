@@ -88,8 +88,8 @@ def query(request):
     worker = CellWorker()
     fail_count = worker.query_cell_ids(cell_ids)
     # If 80% of cell failed, return bad response
-    if fail_count > (len(cell_ids) * 0.8):
-        return HttpResponseBadRequest("Too many failed cell. Total fail count: {0}".format(fail_count))
+    if fail_count > 0:
+        return HttpResponseBadRequest("Some cell failed. Total fail count: {0}".format(fail_count))
     return HttpResponse("OK")
 
 def activate(request):

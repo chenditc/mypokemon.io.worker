@@ -231,9 +231,15 @@ class CellWorker(object):
         # Prefetch existence info, as we might skip most of the cell if it's warmed up.
         for cell_id in cell_ids:
             rcode = self.query_cellid(cell_id)
+            # Retry with longer sleep time
+            if rcode != 0:
+                time.sleep(1)
+                rcode = self.query_cellid(cell_id)
+            # If retry doesn't help, count it as failure
             if rcode != 0:
                 fail_count += 1
                 logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
+
             time.sleep(0.3)
         return fail_count
 
