@@ -1,7 +1,18 @@
 FROM ubuntu:14.04
 MAINTAINER Di Chen <chenditc@gmail.com>
 RUN apt-get update -y && apt-get install -y libpq-dev \
-                                            python-dev 
+                                            python-dev \
+                                            tor \
+                                            privoxy
+
+# Configure tor and restart
+RUN echo AllowSingleHopCircuits 1 | sudo tee /etc/tor/torrc
+RUN sudo service tor restart
+
+# Configure socks forward on tor
+RUN echo forward-socks5 / localhost:9050 . | sudo tee /etc/privoxy/config
+RUN sodo service privoxy restart
+
 
 # Install Python Setuptools
 RUN apt-get install -y python-setuptools
