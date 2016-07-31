@@ -78,7 +78,7 @@ class PGoApi:
         response = None
         try:
             response = request.request(api_endpoint, self._req_method_list, player_position)
-            if 'auth_ticket' in response:
+            if response != False and 'auth_ticket' in response:
                 self._auth_provider.set_ticket(response['auth_ticket'].values())
         except ServerBusyOrOfflineException as e:
             self.log.info('Server seems to be busy or offline - try again!')

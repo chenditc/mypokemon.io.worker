@@ -189,6 +189,7 @@ class CellWorker(object):
 
     def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
+        logging.getLogger("worker").info("Using user: {0}".format(username))
 
         if login_info == None:
             return self.create_and_login_user(username, password)

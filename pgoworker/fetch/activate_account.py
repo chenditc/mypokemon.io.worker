@@ -15,7 +15,6 @@ def poll_email_and_process():
     if os.environ.get("ENV") == "DEV":
         return
 
-
     pop_conn = poplib.POP3_SSL('pop.gmail.com')
     try:
         db = PokemonFortDB()
@@ -24,7 +23,7 @@ def poll_email_and_process():
         pop_conn.pass_('Mypokemon.io')
         poplist = pop_conn.list()
         if poplist[0].startswith('+OK') :
-            for index in range(1, len(poplist[1])+1 ):
+            for index in range(1, min(len(poplist[1])+1, 40) ):
                 message = pop_conn.retr(index)
                 message = "\n".join(message[1])
 
@@ -38,13 +37,16 @@ def poll_email_and_process():
                     db.add_searcher(username)
                     print "Added user:", username
                     pop_conn.dele(index)
+
                     print "Deleted message id:", index
                 else:
                     print "Failed to activate:", username
         else:
             print "Could not connect to server"
     finally:
+        print "exiting"
         pop_conn.quit()
 
 if __name__ == "__main__":
-    poll_email_and_process()
+    while True:
+        poll_email_and_process()
