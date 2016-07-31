@@ -125,7 +125,7 @@ def query_cellid(cellid, api):
     # execute the RPC call
     response_dict = api.call()
 
-    if response_dict == False:
+    if response_dict == None or response_dict == False:
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
@@ -259,9 +259,9 @@ def main():
         logging.getLogger("search").setLevel(logging.DEBUG)
 
     worker = CellWorker() 
-#    cellid = 9926593653843986945
-    cellid = 9926594348437209088
-    worker.query_cellid(cellid)
+    cellid = 9926593653843986945
+#    cellid = 9926594348437209088
+#    worker.query_cellid(cellid)
     worker.query_cell_ids([cellid])
 
 if __name__ == '__main__':

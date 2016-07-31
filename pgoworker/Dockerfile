@@ -11,7 +11,7 @@ RUN sudo service tor restart
 
 # Configure socks forward on tor
 RUN echo forward-socks5 / localhost:9050 . | sudo tee /etc/privoxy/config
-RUN sodo service privoxy restart
+RUN sudo service privoxy restart
 
 
 # Install Python Setuptools
@@ -34,4 +34,4 @@ ADD . /src
 EXPOSE  8080
 
 # Run
-CMD ["python", "/src/manage.py", "runserver", "0.0.0.0:8080"]
+CMD ["/src/start.sh"]
