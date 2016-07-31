@@ -61,6 +61,7 @@ db = pokemon_fort_db.PokemonFortDB()
 POGO_FAILED_LOGIN = -1
 API_FAILED = -2
 SERVER_ERROR = -3
+API_LOGIN_EXPIRE = -4
 
 def get_cell_ids(lat, long, radius = 10):
     origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
@@ -131,10 +132,14 @@ def query_cellid(cellid, api):
 
     # print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
+    if response_dict['status_code'] == 102 or response_dict['status_code'] == 103:
+        return API_LOGIN_EXPIRE
+
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
         logging.getLogger("worker").error(json.dumps(response_dict, indent=2))
         return SERVER_ERROR 
+
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
         logging.getLogger("worker").info("Failed to get map object from cell: {0}".format(cellid)) 
@@ -216,13 +221,13 @@ class CellWorker(object):
 
         rcode = query_cellid(cellid, self.api_client)
 
-#        # Retry once by force login
-#        if rcode != 0:
-#            rcode = self.init_api_client(force_login=True) 
-#            if rcode != 0:
-#                logging.getLogger("worker").info("Failed to refresh api client")
-#                return rcode
-#            rcode = query_cellid(cellid, self.api_client)
+        # Retry once by force login
+        if rcode == API_LOGIN_EXPIRE:
+            rcode = self.init_api_client(force_login=True) 
+            if rcode != 0:
+                logging.getLogger("worker").info("Failed to refresh api client")
+                return rcode
+            rcode = query_cellid(cellid, self.api_client)
 
         return rcode 
 
@@ -231,15 +236,21 @@ class CellWorker(object):
 
         # Prefetch existence info, as we might skip most of the cell if it's warmed up.
         for cell_id in cell_ids:
-            rcode = self.query_cellid(cell_id)
-            # Retry with longer sleep time
-            if rcode != 0:
-                time.sleep(1)
+            retry = 0
+            while retry < 5:
                 rcode = self.query_cellid(cell_id)
+                # Retry with longer sleep time
+                if rcode != 0:
+                    time.sleep(1)
+                    retry += 1
+                    rcode = self.query_cellid(cell_id)
+                    logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}, retry: {2}".format(cell_id, rcode, retry))
+                else:
+                    break
+
             # If retry doesn't help, count it as failure
             if rcode != 0:
                 fail_count += 1
-                logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}".format(cell_id, rcode))
 
             time.sleep(0.3)
         return fail_count

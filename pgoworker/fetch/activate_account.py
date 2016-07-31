@@ -16,8 +16,10 @@ def poll_email_and_process():
         return
 
     pop_conn = poplib.POP3_SSL('pop.gmail.com')
+    print "Connected to gmail"
     try:
         db = PokemonFortDB()
+        print "Connected to db"
 
         pop_conn.user('mypokemon.io419')
         pop_conn.pass_('Mypokemon.io')
