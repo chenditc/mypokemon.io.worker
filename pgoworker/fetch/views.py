@@ -80,9 +80,9 @@ def query(request):
 
     # If cell id size is greater than 20, break it down to smaller pieces and resend to queue
     queue_name = request.META['HTTP_X_AWS_SQSD_QUEUE']
-    if len(cell_ids) > 20:
-        for i in range(0, len(cell_ids), 10):
-            smaller_cells = cell_ids[i:i+10]
+    if len(cell_ids) > 10:
+        for i in range(0, len(cell_ids), 5):
+            smaller_cells = cell_ids[i:i+5]
             work_queue.send_message(MessageBody=json.dumps(smaller_cells))
         return HttpResponse("Redistributed cells")
 
