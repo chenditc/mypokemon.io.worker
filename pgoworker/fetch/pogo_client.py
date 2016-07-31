@@ -223,7 +223,8 @@ class CellWorker(object):
 
         # Retry once by force login
         if rcode == API_LOGIN_EXPIRE:
-            rcode = self.init_api_client(force_login=True) 
+            # Try to use another account
+            rcode = self.init_api_client() 
             if rcode != 0:
                 logging.getLogger("worker").info("Failed to refresh api client")
                 return rcode
@@ -243,7 +244,7 @@ class CellWorker(object):
                 if rcode != 0:
                     time.sleep(1)
                     retry += 1
-                    rcode = self.query_cellid(cell_id)
+                    self.init_api_client() 
                     logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}, retry: {2}".format(cell_id, rcode, retry))
                 else:
                     break
@@ -270,8 +271,8 @@ def main():
         logging.getLogger("search").setLevel(logging.DEBUG)
 
     worker = CellWorker() 
-    cellid = 9926593653843986945
-#    cellid = 9926594348437209088
+#    cellid = 9926593653843986945
+    cellid = 9926594313272164352
 #    worker.query_cellid(cellid)
     worker.query_cell_ids([cellid])
 
