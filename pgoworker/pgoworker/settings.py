@@ -125,6 +125,14 @@ STATIC_URL = '/static/'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG',
@@ -138,19 +146,28 @@ LOGGING = {
         },
         'worker': {
             'handlers': ['file'],
-            'level': 'INFO'
+            'level': 'INFO',
+            'formatter': 'verbose'
         },
         'requests': {
             'handlers': ['file'],
+            'level': 'INFO',
+            'formatter': 'verbose'
         },
         'pgoapi': {
             'handlers': ['file'],
+            'level': 'INFO',
+            'formatter': 'verbose'
         },
         'rpc_api': {
             'handlers': ['file'],
+            'level': 'INFO',
+            'formatter': 'verbose'
         },
         'search': {
             'handlers': ['file'],
+            'level': 'INFO',
+            'formatter': 'verbose'
         },
     }
 }
