@@ -62,6 +62,7 @@ POGO_FAILED_LOGIN = -1
 API_FAILED = -2
 SERVER_ERROR = -3
 API_LOGIN_EXPIRE = -4
+SERVER_TIMEOUT = -5
 
 def get_cell_ids(lat, long, radius = 10):
     origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
@@ -213,22 +214,26 @@ class CellWorker(object):
         return 0
 
     def query_cellid(self, cellid):
-        if self.api_client == None:
-            rcode = self.init_api_client() 
-            if rcode != 0:
-                logging.getLogger("worker").info("Failed to refresh api client")
-                return rcode
+        try:
+            if self.api_client == None:
+                rcode = self.init_api_client() 
+                if rcode != 0:
+                    logging.getLogger("worker").info("Failed to refresh api client")
+                    return rcode
 
-        rcode = query_cellid(cellid, self.api_client)
-
-        # Retry once by force login
-        if rcode == API_LOGIN_EXPIRE:
-            # Try to use another account
-            rcode = self.init_api_client() 
-            if rcode != 0:
-                logging.getLogger("worker").info("Failed to refresh api client")
-                return rcode
             rcode = query_cellid(cellid, self.api_client)
+
+            # Retry once by force login
+            if rcode == API_LOGIN_EXPIRE:
+                # Try to use another account
+                rcode = self.init_api_client() 
+                if rcode != 0:
+                    logging.getLogger("worker").info("Failed to refresh api client")
+                    return rcode
+                rcode = query_cellid(cellid, self.api_client)
+        except requests.exceptions.Timeout:
+            logging.getLogger("worker").error("Timout when query cellid {0}".format(cellid))
+            return SERVER_TIMEOUT 
 
         return rcode 
 
