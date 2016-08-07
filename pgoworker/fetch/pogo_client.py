@@ -226,7 +226,10 @@ class CellWorker(object):
         for cell_id in cell_ids:
             retry = 0
             while retry < 5:
-                rcode = self.query_cellid(cell_id)
+                try:
+                    rcode = self.query_cellid(cell_id)
+                except:
+                    rcode = 1
                 # Retry with another account 
                 if rcode != 0:
                     retry += 1
@@ -259,9 +262,7 @@ def main():
     cellid = 9926594313272164352
 
 #    worker.query_cellid(cellid)
-    for i in range(20):
-        rcode = worker.query_cell_ids([cellid])
-        assert(rcode == 0)
+    rcode = worker.query_cell_ids([cellid])
 
 if __name__ == '__main__':
     DEBUG = True
