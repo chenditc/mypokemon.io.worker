@@ -64,6 +64,7 @@ API_FAILED = -2
 SERVER_ERROR = -3
 API_LOGIN_EXPIRE = -4
 SERVER_TIMEOUT = -5
+SERVER_THROTTLE = -6
 
 def get_position_from_cellid(cellid):
     cell = CellId(id_ = cellid).to_lat_lng()
@@ -95,19 +96,20 @@ def query_cellid(cellid, api):
 
     cell_ids = [cellid] 
     timestamps = [0]
-    response_dict = api.get_map_objects(latitude = position[0], 
-                        longitude = position[1], 
-                        since_timestamp_ms = timestamps, 
-                        cell_id = cell_ids)
+    try:
+        response_dict = api.get_map_objects(latitude = position[0], 
+                            longitude = position[1], 
+                            since_timestamp_ms = timestamps, 
+                            cell_id = cell_ids)
+    except ServerSideRequestThrottlingException:
+        return SERVER_THROTTLE
+
    
     if response_dict == None or response_dict == False:
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
     #logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
-
-    if response_dict['status_code'] == 102 or response_dict['status_code'] == 103:
-        return API_LOGIN_EXPIRE
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
