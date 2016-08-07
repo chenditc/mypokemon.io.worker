@@ -46,6 +46,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from pgoapi import pgoapi
 from pgoapi import utilities as util
 from pgoapi.auth_ptc import AuthPtc
+from pgoapi.exceptions import ServerSideRequestThrottlingException
 
 # other stuff
 from google.protobuf.internal import encoder
@@ -258,7 +259,9 @@ def main():
     cellid = 9926594313272164352
 
 #    worker.query_cellid(cellid)
-    worker.query_cell_ids([cellid])
+    for i in range(20):
+        rcode = worker.query_cell_ids([cellid])
+        assert(rcode == 0)
 
 if __name__ == '__main__':
     DEBUG = True
