@@ -230,6 +230,8 @@ class CellWorker(object):
                     rcode = self.query_cellid(cell_id)
                 except:
                     rcode = 1
+                if rcode == SERVER_THROTTLE:
+                    time.sleep(1)
                 # Retry with another account 
                 if rcode != 0:
                     retry += 1
@@ -242,7 +244,7 @@ class CellWorker(object):
             if rcode != 0:
                 fail_count += 1
 
-            time.sleep(0.3)
+            time.sleep(1)
         return fail_count
 
 def main():
