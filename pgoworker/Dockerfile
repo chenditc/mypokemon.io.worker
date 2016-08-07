@@ -26,6 +26,7 @@ RUN cd /src; pip install -r requirements.txt
 
 # Bundle app source
 ADD . /src
+ADD ./encrypt.so /usr/local/bin/encrypt.so
 
 # Add logging mount point
 

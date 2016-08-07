@@ -64,38 +64,10 @@ SERVER_ERROR = -3
 API_LOGIN_EXPIRE = -4
 SERVER_TIMEOUT = -5
 
-def get_cell_ids(lat, long, radius = 10):
-    origin = CellId.from_lat_lng(LatLng.from_degrees(lat, long)).parent(15)
-    walk = [origin.id()]
-    right = origin.next()
-    left = origin.prev()
-
-    # Search around provided radius
-    for i in range(radius):
-        walk.append(right.id())
-        walk.append(left.id())
-        right = right.next()
-        left = left.prev()
-
-    # Return everything
-    return sorted(walk)
-
-def get_monitor_list():
-    return db.get_search_cellids(50)
-
 def get_position_from_cellid(cellid):
-    # Check if there is spawn point, if so, use it as location
-    point = db.get_first_spawn_point(cellid)
-    if point != None:
-        return point
-
     cell = CellId(id_ = cellid).to_lat_lng()
     return (math.degrees(cell._LatLng__coords[0]), math.degrees(cell._LatLng__coords[1]), 0)
     
-def encode(cellid):
-    output = []
-    encoder._VarintEncoder()(output.append, cellid)
-    return ''.join(output)
   
 def update_forts(cell_id, forts):
     forts_info = []
@@ -122,16 +94,16 @@ def query_cellid(cellid, api):
 
     cell_ids = [cellid] 
     timestamps = [0]
-    api.get_map_objects(latitude = util.f2i(position[0]), longitude = util.f2i(position[1]), since_timestamp_ms = timestamps, cell_id = cell_ids)
+    response_dict = api.get_map_objects(latitude = position[0], 
+                        longitude = position[1], 
+                        since_timestamp_ms = timestamps, 
+                        cell_id = cell_ids)
    
-    # execute the RPC call
-    response_dict = api.call()
-
     if response_dict == None or response_dict == False:
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    # print('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] == 102 or response_dict['status_code'] == 103:
         return API_LOGIN_EXPIRE
@@ -179,9 +151,17 @@ def query_cellid(cellid, api):
 class CellWorker(object):
     def __init__(self):
         self.api_client = None
+        self.login_location = None
 
     def create_and_login_user(self, username, password):
+        position = self.login_location
         self.api_client = pgoapi.PGoApi()
+        self.api_client.set_position(*position)
+        self.api_client.set_authentication(provider = "ptc", 
+                                           username = username, 
+                                           password = password)
+        self.api_client.activate_signature("/usr/local/bin/encrypt.so")
+
         if not self.api_client.login("ptc", username, password):
             logging.getLogger("pgoapi").error("Failed to login") 
             return POGO_FAILED_LOGIN
@@ -196,6 +176,8 @@ class CellWorker(object):
     def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
         logging.getLogger("worker").info("Using user: {0}".format(username))
+        if True:
+            return self.create_and_login_user(username, password)
 
         if login_info == None:
             return self.create_and_login_user(username, password)
@@ -211,26 +193,18 @@ class CellWorker(object):
         self.api_client._auth_provider._auth_token = login_info["token"]
         self.api_client._auth_provider._login = True
         self.api_client._api_endpoint = login_info["api_endpoint"]
+        # provide the path for your encrypt dll
+        self.api_client.activate_signature("/usr/local/bin/encrypt.so")
         return 0
 
     def query_cellid(self, cellid):
+        self.login_location = get_position_from_cellid(cellid)
         try:
             if self.api_client == None:
                 rcode = self.init_api_client() 
-                if rcode != 0:
-                    logging.getLogger("worker").info("Failed to refresh api client")
-                    return rcode
 
             rcode = query_cellid(cellid, self.api_client)
 
-            # Retry once by force login
-            if rcode == API_LOGIN_EXPIRE:
-                # Try to use another account
-                rcode = self.init_api_client() 
-                if rcode != 0:
-                    logging.getLogger("worker").info("Failed to refresh api client")
-                    return rcode
-                rcode = query_cellid(cellid, self.api_client)
         except requests.exceptions.Timeout:
             logging.getLogger("worker").error("Timout when query cellid {0}".format(cellid))
             return SERVER_TIMEOUT 
@@ -245,9 +219,8 @@ class CellWorker(object):
             retry = 0
             while retry < 5:
                 rcode = self.query_cellid(cell_id)
-                # Retry with longer sleep time
+                # Retry with another account 
                 if rcode != 0:
-                    time.sleep(1)
                     retry += 1
                     self.init_api_client() 
                     logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}, retry: {2}".format(cell_id, rcode, retry))
@@ -260,7 +233,6 @@ class CellWorker(object):
 
             time.sleep(0.3)
         return fail_count
-
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(module)10s] [%(levelname)5s] %(message)s')
@@ -277,7 +249,8 @@ def main():
 
     worker = CellWorker() 
 #    cellid = 9926593653843986945
-    cellid = 9926594313272164352
+#    cellid = 9926594313272164352
+    cellid = 9933386713856475136
 #    worker.query_cellid(cellid)
     worker.query_cell_ids([cellid])
 
