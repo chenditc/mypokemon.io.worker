@@ -104,7 +104,7 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    #logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] == 102 or response_dict['status_code'] == 103:
         return API_LOGIN_EXPIRE
