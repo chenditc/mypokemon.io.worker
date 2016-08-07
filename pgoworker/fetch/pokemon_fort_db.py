@@ -112,7 +112,6 @@ class PokemonFortDB(object):
                         "and latitude > %s " + 
                         "and latitude < %s " +
                      "ORDER BY fortid limit 200",
-#                    "ORDER BY RANDOM() limit 200", 
                 (west, east, south, north))
         rows = cur.fetchall()
         forts = []

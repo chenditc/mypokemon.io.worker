@@ -36,6 +36,7 @@ import logging
 import requests
 import argparse
 import getpass
+import cPickle
 
 
 # add directory of this file to PATH, so that the package will be found
@@ -103,7 +104,7 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    # logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] == 102 or response_dict['status_code'] == 103:
         return API_LOGIN_EXPIRE
@@ -166,35 +167,39 @@ class CellWorker(object):
             logging.getLogger("pgoapi").error("Failed to login") 
             return POGO_FAILED_LOGIN
         # Save login info
-        login_info = { "token" : self.api_client._auth_provider._auth_token,
-                       "api_endpoint" : self.api_client._api_endpoint,
+        login_info = { "token" : self.api_client._auth_provider._access_token,
+                       "api_endpoint" : self.api_client.get_api_endpoint(),
+                       "refresh_token" : self.api_client._auth_provider._refresh_token,
+                       "ticket" : cPickle.dumps(self.api_client._auth_provider.get_ticket()),
                        "login_time" : time.time()}
-        db.update_searcher_account_login_info(username, json.dumps(login_info))
+        login_info = json.dumps(login_info)
+        db.update_searcher_account_login_info(username, login_info)
         return 0
 
 
     def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
         logging.getLogger("worker").info("Using user: {0}".format(username))
-        if True:
-            return self.create_and_login_user(username, password)
+
 
         if login_info == None:
             return self.create_and_login_user(username, password)
 
         login_info = json.loads(login_info)
         # Refresh login every 15 minutes
-        if login_info["login_time"] + 900 < time.time() or force_login:
+        if (login_info["login_time"] + 900 < time.time() 
+                or login_info["token"] == None 
+                or force_login) :
             return self.create_and_login_user(username, password)
 
         # Load login info
         self.api_client = pgoapi.PGoApi() 
-        self.api_client._auth_provider = AuthPtc()
-        self.api_client._auth_provider._auth_token = login_info["token"]
-        self.api_client._auth_provider._login = True
-        self.api_client._api_endpoint = login_info["api_endpoint"]
-        # provide the path for your encrypt dll
         self.api_client.activate_signature("/usr/local/bin/encrypt.so")
+        self.api_client.set_authentication("ptc", login_info["refresh_token"], username, password)
+        self.api_client._auth_provider._access_token = login_info["token"]
+        self.api_client.set_api_endpoint( login_info["api_endpoint"] )
+        self.api_client._auth_provider.set_ticket(cPickle.loads(str(login_info["ticket"])))
+        self.api_client._auth_provider._login = True
         return 0
 
     def query_cellid(self, cellid):
@@ -248,9 +253,8 @@ def main():
         logging.getLogger("search").setLevel(logging.DEBUG)
 
     worker = CellWorker() 
-#    cellid = 9926593653843986945
-#    cellid = 9926594313272164352
-    cellid = 9933386713856475136
+    cellid = 9926594313272164352
+
 #    worker.query_cellid(cellid)
     worker.query_cell_ids([cellid])
 
