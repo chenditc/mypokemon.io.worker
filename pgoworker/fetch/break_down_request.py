@@ -62,7 +62,7 @@ def filter_duplciate_cell_ids(cell_ids):
             redis_client.setex(redis_query[index], 60, '1')
     return new_cell_ids
 
-def break_down_request(request, context):
+def break_down_request(request):
     logger.info("Received:{0}".format(request))
     try:
         # Parse cell ids
@@ -99,4 +99,4 @@ if __name__ == "__main__":
              "north" : 40.7728,
              "west" : -74.0082,
              "target" : "pokemon"}
-            , None)
+            )
