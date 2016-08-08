@@ -39,11 +39,33 @@ def activate(request):
     return HttpResponse("OK")
 
 def warm_up(request):
+    # Skip dev environment to save resource
+    if os.environ.get('ENV', 'DEV') == 'DEV':
+        return HttpResponse("OK")
+
     # Warm up mahattan area
-    request1 = {"east" : -73.9542,
+    request = {"east" : -73.9542,
                 "south" : 40.7352,
                 "north" : 40.7728,
                 "west" : -74.0082,
                 "target" : "pokemon"}
-    break_down_request(request1)
+    break_down_request(request)
+
+    request = {"east" : -73.927908,
+                "south" : 40.766194,
+                "north" : 40.8094077,
+                "west" : -73.9937221,
+                "target" : "pokemon"}
+    break_down_request(request)
+
+    request = {"east" : -73.9798333,
+                "south" : 40.7014576,
+                "north" : 40.740863,
+                "west" : -74.080372,
+                "target" : "pokemon"}
+    break_down_request(request)
+
+
+
+
     return HttpResponse("OK")
