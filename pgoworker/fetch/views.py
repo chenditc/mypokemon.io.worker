@@ -37,3 +37,13 @@ def query(request):
 def activate(request):
     poll_email_and_process()
     return HttpResponse("OK")
+
+def warm_up(request):
+    # Warm up mahattan area
+    request1 = {"east" : -73.9542,
+                "south" : 40.7352,
+                "north" : 40.7728,
+                "west" : -74.0082,
+                "target" : "pokemon"}
+    break_down_request(request1)
+    return HttpResponse("OK")
