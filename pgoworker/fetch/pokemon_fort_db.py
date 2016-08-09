@@ -29,12 +29,8 @@ class PokemonFortDB(object):
                         " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" +
                         " ON CONFLICT (fortid) DO UPDATE SET gymteam = EXCLUDED.gymteam, lure_expire = EXCLUDED.lure_expire, last_update = EXCLUDED.last_update;", 
                 (fortid, cellid, enabled, latitude, longitude, forttype, gymteam, lure_expire, now))
+        self.commit()
 
-    def mark_search(self, cellid):
-        now = time.time()
-        with self.conn.cursor() as cur:
-            cur.execute("INSERT INTO map_search_record (timestamp, cellid) " + 
-                        " VALUES (%s, %s) ON CONFLICT (cellid) DO NOTHING", (now, cellid)) 
 
     def add_spawn_points(self, cellid, spawn_points):
         now = time.time()
@@ -53,6 +49,8 @@ class PokemonFortDB(object):
                 cur.execute("INSERT INTO spawn_point_map (cellid, latitude, longitude, last_check)" +  
                             " VALUES (%s, %s, %s, %s) ON CONFLICT (latitude, longitude) DO NOTHING",
                     (cellid, latitude, longitude, now))
+        self.commit()
+
 
     def get_first_spawn_point(self, cellid):
         with self.conn.cursor() as cur:
@@ -70,19 +68,8 @@ class PokemonFortDB(object):
                         " VALUES (%s, %s, %s, %s, %s)" +
                         " ON CONFLICT (encounter_id, expire, pokemon_id, latitude, longitude) DO NOTHING",
                 (encounter_id, expire, pokemon_id, latitude, longitude))
+        self.commit()
 
-    def get_search_cellids(self, limit=200):
-        now = time.time()
-        with self.conn.cursor() as cur:
-            cur.execute("SELECT DISTINCT(map_visit_record.cellid) " +  
-                        " FROM map_visit_record, map_search_record" + 
-                        " WHERE map_visit_record.timestamp > %s" +  # Visited last hour
-                            " AND map_search_record.timestamp < %s" +   # Didn't update last minute
-                            " AND map_search_record.cellid = map_visit_record.cellid " +
-                        " LIMIT %s", (now - 3600, now - 60, limit))
-            rows = cur.fetchall()
-            result = [ int(row[0]) for row in rows ]
-            return result
 
 
 ############################################################################################################
@@ -131,6 +118,8 @@ class PokemonFortDB(object):
                         " LIMIT 1")
             username, password, logininfo = cur.fetchone()
             return (username, password, logininfo) 
+        self.commit()
+
 
     def update_searcher_account_login_info(self, username, logininfo):
         with self.conn.cursor() as cur:
@@ -138,6 +127,7 @@ class PokemonFortDB(object):
                         " SET logininfo = %s, " + 
                         " lastused = %s " + 
                         " WHERE username = %s;", (logininfo, time.time(), username))
+        self.commit()
 
     def add_searcher(self, username):
         with self.conn.cursor() as cur:
@@ -145,6 +135,8 @@ class PokemonFortDB(object):
                         " VALUES (%s, %s, %s, %s)" +
                         " ON CONFLICT (username) DO NOTHING",
                 (username, username, 0, 0))
+        self.commit()
+
 
     def get_all_searcher_account(self):
         with self.conn.cursor() as cur:
@@ -153,6 +145,7 @@ class PokemonFortDB(object):
             rows = cur.fetchall()
             usernames = [ row[0] for row in rows]
             return usernames 
+        self.commit()
 
     def commit(self):
         self.conn.commit()
