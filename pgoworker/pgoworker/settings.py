@@ -169,5 +169,11 @@ LOGGING = {
             'level': 'INFO',
             'formatter': 'verbose'
         },
+        'BreakDownRequest': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'formatter': 'verbose'
+        },
+
     }
 }

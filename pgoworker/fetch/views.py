@@ -66,6 +66,6 @@ def warm_up(request):
     break_down_request(request)
 
 
-
+    logging.getLogger('worker').info("Wram up request done")
 
     return HttpResponse("OK")
