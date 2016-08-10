@@ -221,7 +221,6 @@ class CellWorker(object):
 
     def query_cellid(self, cellid):
         start_time = time.time()
-        self.login_location = get_position_from_cellid(cellid)
         try:
             rcode = query_cellid(cellid, self.api_client)
 
@@ -238,6 +237,8 @@ class CellWorker(object):
 
         # Prefetch existence info, as we might skip most of the cell if it's warmed up.
         for cell_id in cell_ids:
+            self.login_location = get_position_from_cellid(cell_id)
+
             retry = 0
             while retry < 5:
 
