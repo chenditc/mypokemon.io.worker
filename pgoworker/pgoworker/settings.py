@@ -138,6 +138,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': '/var/log/django/worker.log',
+            'formatter': 'verbose'
         },
     },
     'loggers': {
@@ -146,33 +147,27 @@ LOGGING = {
         },
         'worker': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
         'requests': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
         'pgoapi': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
         'rpc_api': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
         'search': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
         'BreakDownRequest': {
             'handlers': ['file'],
-            'level': 'INFO',
-            'formatter': 'verbose'
+            'level': 'DEBUG',
         },
 
     }

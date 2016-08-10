@@ -112,7 +112,6 @@ def query_cellid(cellid, api):
         return API_FAILED 
 
     if response_dict['status_code'] == 53:
-        quit()
         return REDIRECT_ENDPOINT 
 
     logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
@@ -124,7 +123,7 @@ def query_cellid(cellid, api):
 
     if ('GET_MAP_OBJECTS' not in response_dict['responses'] or
         'map_cells' not in response_dict['responses']['GET_MAP_OBJECTS']):
-        logging.getLogger("worker").info("Failed to get map object from cell: {0}".format(cellid)) 
+        logging.getLogger("worker").info("Empty cell: {0}".format(cellid)) 
         # Valid scenario because no china data
         return 0
 
@@ -224,9 +223,6 @@ class CellWorker(object):
         start_time = time.time()
         self.login_location = get_position_from_cellid(cellid)
         try:
-            if self.api_client == None:
-                rcode = self.init_api_client() 
-
             rcode = query_cellid(cellid, self.api_client)
 
         except requests.exceptions.Timeout:
@@ -244,10 +240,10 @@ class CellWorker(object):
         for cell_id in cell_ids:
             retry = 0
             while retry < 5:
-                rcode = self.query_cellid(cell_id)
 
                 self.init_api_client() 
 
+                rcode = self.query_cellid(cell_id)
 
                 # Throttle handling
                 if rcode == SERVER_THROTTLE:
@@ -255,7 +251,6 @@ class CellWorker(object):
                 # Retry with another account 
                 if rcode != 0:
                     retry += 1
-                    self.init_api_client() 
                     logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}, retry: {2}".format(cell_id, rcode, retry))
                 else:
                     # Good account, save it
