@@ -81,8 +81,8 @@ def break_down_request(request):
 
     # Send to worker to query
     cnt = 0
-    for i in range(0, len(cell_ids), 5):
-        smaller_cells = cell_ids[i:i+5]
+    for i in range(0, len(cell_ids), 2):
+        smaller_cells = cell_ids[i:i+2]
         cnt += 1
         logger.debug("Cell batch: {0}".format(smaller_cells))
         work_queue.send_message(MessageBody=json.dumps(smaller_cells))

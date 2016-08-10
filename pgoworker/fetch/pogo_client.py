@@ -103,8 +103,8 @@ def query_cellid(cellid, api):
                             longitude = position[1], 
                             since_timestamp_ms = timestamps, 
                             cell_id = cell_ids)
-    except ServerSideRequestThrottlingException:
-        return SERVER_THROTTLE
+    except:
+        return SERVER_ERROR 
 
    
     if response_dict == None or response_dict == False:
