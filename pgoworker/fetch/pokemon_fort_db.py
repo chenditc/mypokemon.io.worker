@@ -113,13 +113,12 @@ class PokemonFortDB(object):
     def get_searcher_account(self):
         with self.conn.cursor() as cur:
             # not used for last 5seconds
-            legit_time = time.time() - 5
             cur.execute("SELECT username, password, logininfo " +  
                         " FROM searcher_account" + 
-                        #                        " ORDER BY RANDOM()" +  # Visited last hour
-                        " WHERE lastused < %s "
+                        " ORDER BY RANDOM()" +  # Visited last hour
+                        #                        " WHERE lastused < %s "
                         #                        " AND username='searchfort17322' "
-                        " LIMIT 1", (legit_time,))
+                        " LIMIT 1")
             username, password, logininfo = cur.fetchone()
             return (username, password, logininfo) 
         self.commit()
