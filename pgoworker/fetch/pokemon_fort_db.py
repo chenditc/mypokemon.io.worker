@@ -116,8 +116,7 @@ class PokemonFortDB(object):
             cur.execute("SELECT username, password, logininfo " +  
                         " FROM searcher_account" + 
                         " ORDER BY RANDOM()" +  # Visited last hour
-                        #                        " WHERE lastused < %s "
-                        #                        " AND username='searchfort17322' "
+                        #                        " WHERE username='searchfort34032' "
                         " LIMIT 1")
             username, password, logininfo = cur.fetchone()
             return (username, password, logininfo) 

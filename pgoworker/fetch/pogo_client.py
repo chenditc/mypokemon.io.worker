@@ -104,6 +104,7 @@ def query_cellid(cellid, api):
                             since_timestamp_ms = timestamps, 
                             cell_id = cell_ids)
     except:
+        print "Unexpected error:", sys.exc_info()[0]
         return SERVER_ERROR 
 
    
@@ -203,7 +204,8 @@ class CellWorker(object):
         username, password, login_info = db.get_searcher_account()
         logging.getLogger("worker").info("Using user: {0}".format(username))
 
-        if login_info == None:
+        # TODO: Implment login reuse
+        if True or login_info == None:
             return self.create_and_login_user(username, password)
 
         login_info = json.loads(login_info)
@@ -281,7 +283,7 @@ def main():
     cellid = 9926594313272164352
 
 #    worker.query_cellid(cellid)
-    rcode = worker.query_cell_ids([cellid] * 5)
+    rcode = worker.query_cell_ids([cellid]*5)
 
 if __name__ == '__main__':
     DEBUG = True

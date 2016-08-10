@@ -6,12 +6,12 @@ RUN apt-get update -y && apt-get install -y libpq-dev \
                                             privoxy
 
 # Configure tor and restart
-RUN echo AllowSingleHopCircuits 1 | sudo tee /etc/tor/torrc
-RUN sudo service tor restart
+#RUN echo AllowSingleHopCircuits 1 | sudo tee /etc/tor/torrc
+#RUN sudo service tor restart
 
 # Configure socks forward on tor
-RUN echo forward-socks5 / localhost:9050 . | sudo tee /etc/privoxy/config
-RUN sudo service privoxy restart
+#RUN echo forward-socks5 / localhost:9050 . | sudo tee /etc/privoxy/config
+#RUN sudo service privoxy restart
 
 
 # Install Python Setuptools
