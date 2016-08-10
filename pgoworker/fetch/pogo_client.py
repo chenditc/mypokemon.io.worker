@@ -66,6 +66,7 @@ SERVER_ERROR = -3
 API_LOGIN_EXPIRE = -4
 SERVER_TIMEOUT = -5
 SERVER_THROTTLE = -6
+REDIRECT_ENDPOINT = -7
 
 def get_position_from_cellid(cellid):
     cell = CellId(id_ = cellid).to_lat_lng()
@@ -110,7 +111,11 @@ def query_cellid(cellid, api):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    #logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    if response_dict['status_code'] == 53:
+        quit()
+        return REDIRECT_ENDPOINT 
+
+    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
@@ -167,10 +172,6 @@ class CellWorker(object):
         self.api_client.activate_signature("/usr/local/bin/encrypt.so")
         self.api_client.username = username
         self.api_client.new_login = True
-
-        if not self.api_client.login("ptc", username, password):
-            logging.getLogger("pgoapi").error("Failed to login") 
-            return POGO_FAILED_LOGIN
         return 0
 
     def save_login_info(self):
@@ -187,13 +188,21 @@ class CellWorker(object):
         db.update_searcher_account_login_info(self.api_client.username, login_info)
         return 0
 
-
+    def load_login_info(self, username, password, login_info):
+        # Load login info
+        self.api_client = pgoapi.PGoApi() 
+        self.api_client.new_login = False
+        self.api_client.activate_signature("/usr/local/bin/encrypt.so")
+        self.api_client.set_authentication("ptc", login_info["refresh_token"], username, password)
+        self.api_client._auth_provider._access_token = login_info["token"]
+        self.api_client.set_api_endpoint( login_info["api_endpoint"] )
+        self.api_client._auth_provider.set_ticket(cPickle.loads(str(login_info["ticket"])))
+        self.api_client._auth_provider._login = True
 
 
     def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
         logging.getLogger("worker").info("Using user: {0}".format(username))
-
 
         if login_info == None:
             return self.create_and_login_user(username, password)
@@ -205,18 +214,14 @@ class CellWorker(object):
                 or force_login) :
             return self.create_and_login_user(username, password)
 
-        # Load login info
-        self.api_client = pgoapi.PGoApi() 
-        self.api_client.new_login = False
-        self.api_client.activate_signature("/usr/local/bin/encrypt.so")
-        self.api_client.set_authentication("ptc", login_info["refresh_token"], username, password)
-        self.api_client._auth_provider._access_token = login_info["token"]
-        self.api_client.set_api_endpoint( login_info["api_endpoint"] )
-        self.api_client._auth_provider.set_ticket(cPickle.loads(str(login_info["ticket"])))
-        self.api_client._auth_provider._login = True
+        try:
+            self.load_login_info(username, password, login_info)
+        except:
+            return self.create_and_login_user(username, password)
         return 0
 
     def query_cellid(self, cellid):
+        start_time = time.time()
         self.login_location = get_position_from_cellid(cellid)
         try:
             if self.api_client == None:
@@ -228,6 +233,8 @@ class CellWorker(object):
             logging.getLogger("worker").error("Timout when query cellid {0}".format(cellid))
             return SERVER_TIMEOUT 
 
+        logging.getLogger("worker").info("Query cellid {0} took {1} seconds".format(cellid, time.time() - start_time))
+
         return rcode 
 
     def query_cell_ids(self, cell_ids):
@@ -237,10 +244,10 @@ class CellWorker(object):
         for cell_id in cell_ids:
             retry = 0
             while retry < 5:
-                try:
-                    rcode = self.query_cellid(cell_id)
-                except:
-                    rcode = 1
+                rcode = self.query_cellid(cell_id)
+
+                self.init_api_client() 
+
 
                 # Throttle handling
                 if rcode == SERVER_THROTTLE:
@@ -259,7 +266,6 @@ class CellWorker(object):
             if rcode != 0:
                 fail_count += 1
 
-            time.sleep(1)
         return fail_count
 
 def main():
@@ -279,7 +285,7 @@ def main():
     cellid = 9926594313272164352
 
 #    worker.query_cellid(cellid)
-    rcode = worker.query_cell_ids([cellid])
+    rcode = worker.query_cell_ids([cellid] * 5)
 
 if __name__ == '__main__':
     DEBUG = True
