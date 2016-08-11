@@ -111,16 +111,19 @@ class PokemonFortDB(object):
 ############################################################################################################
 
     def get_searcher_account(self):
-        with self.conn.cursor() as cur:
-            # not used for last 5seconds
-            cur.execute("SELECT username, password, logininfo " +  
-                        " FROM searcher_account" + 
-                        " ORDER BY RANDOM()" +  # Visited last hour
-                        #                        " WHERE username='searchfort34032' "
-                        " LIMIT 1")
-            username, password, logininfo = cur.fetchone()
-            return (username, password, logininfo) 
-        self.commit()
+        try:
+            with self.conn.cursor() as cur:
+                # not used for last 5seconds
+                cur.execute("SELECT username, password, logininfo " +  
+                            " FROM searcher_account" + 
+                            " ORDER BY RANDOM()" +  # Visited last hour
+                            #                        " WHERE username='searchfort34032' "
+                            " LIMIT 1")
+                username, password, logininfo = cur.fetchone()
+                return (username, password, logininfo) 
+            self.commit()
+        except:
+            self.conn.rollback()
 
 
     def update_searcher_account_login_info(self, username, logininfo):
