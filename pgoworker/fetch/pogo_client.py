@@ -115,7 +115,8 @@ def query_cellid(cellid, api):
     if response_dict['status_code'] == 53:
         return REDIRECT_ENDPOINT 
 
-    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+
+    # logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
