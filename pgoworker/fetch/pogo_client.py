@@ -164,15 +164,20 @@ class CellWorker(object):
         self.login_location = None
 
     def create_and_login_user(self, username, password):
-        position = self.login_location
-        self.api_client = pgoapi.PGoApi()
-        self.api_client.set_position(*position)
-        self.api_client.set_authentication(provider = "ptc", 
-                                           username = username, 
-                                           password = password)
-        self.api_client.activate_signature("/usr/local/bin/encrypt.so")
-        self.api_client.username = username
-        self.api_client.new_login = True
+        for i in range(5):
+            try:
+                position = self.login_location
+                self.api_client = pgoapi.PGoApi()
+                self.api_client.username = username
+                self.api_client.set_position(*position)
+                self.api_client.set_authentication(provider = "ptc", 
+                                                   username = username, 
+                                                   password = password)
+                self.api_client.activate_signature("/usr/local/bin/encrypt.so")
+                self.api_client.new_login = True
+                break;
+            except:
+                logging.getLogger("worker").error("Faild to login user: {0}, exception: {1}".format(username, sys.exc_info()[0]))
         return 0
 
     def save_login_info(self):
@@ -190,17 +195,22 @@ class CellWorker(object):
         return 0
 
     def load_login_info(self, username, password, login_info):
+        logging.getLogger("worker").info("Loading login info for {0}".format(username))
         # Load login info
         self.api_client = pgoapi.PGoApi() 
+        self.api_client.username = username
         self.api_client.new_login = False
         self.api_client.activate_signature("/usr/local/bin/encrypt.so")
 
         self.api_client.set_authentication("ptc", login_info["refresh_token"], username, password)
+
         self.api_client._auth_provider._access_token = login_info["token"]
         self.api_client.set_api_endpoint( login_info["api_endpoint"] )
         self.api_client._auth_provider.set_ticket(cPickle.loads(str(login_info["ticket"])))
         self.api_client._auth_provider._login = True
 
+    def clear_login_info(self):
+        db.clear_searcher_account_login_info(self.api_client.username)
 
 
     def init_api_client(self, force_login=False):
@@ -211,16 +221,18 @@ class CellWorker(object):
         if login_info == None:
             return self.create_and_login_user(username, password)
 
-#        login_info = json.loads(login_info)
-#        # Refresh login every 15 minutes
-#        if (login_info["login_time"] + 900 < time.time() 
-#                or login_info["token"] == None 
-#                or force_login) :
-#            return self.create_and_login_user(username, password)
+        login_info = json.loads(login_info)
+        # Refresh login every 15 minutes
+        if (login_info["login_time"] + 900 < time.time() 
+                or login_info["token"] == None 
+                or force_login) :
+            logging.getLogger("worker").info("login time too old, re-login {0}".format(username))
+            return self.create_and_login_user(username, password)
 
         try:
             self.load_login_info(username, password, login_info)
         except:
+            logging.getLogger("worker").error("Faild to load login info from: {0} {1}, exception: {2}".format(username, login_info, sys.exc_info()[0]))
             return self.create_and_login_user(username, password)
         return 0
 
@@ -246,18 +258,16 @@ class CellWorker(object):
 
             retry = 0
             while retry < 5:
-
+                # Retrieve new account
                 self.init_api_client() 
-
                 rcode = self.query_cellid(cell_id)
 
-                # Throttle handling
-                if rcode == SERVER_THROTTLE:
-                    time.sleep(1)
                 # Retry with another account 
                 if rcode != 0:
                     retry += 1
                     logging.getLogger('worker').info("Failed to query cell id {0}, rcode {1}, retry: {2}".format(cell_id, rcode, retry))
+                    self.clear_login_info()
+                    time.sleep(1)
                 else:
                     # Good account, save it
                     self.save_login_info()

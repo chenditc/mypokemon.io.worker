@@ -116,7 +116,7 @@ class PokemonFortDB(object):
                 # not used for last 5seconds
                 cur.execute("SELECT username, password, logininfo " +  
                             " FROM searcher_account" + 
-                            #                            " WHERE username='searchfort40535' " +
+                            #                            " WHERE username='searchfort40537' " +
                             " ORDER BY RANDOM()" +  # Visited last hour
                             " LIMIT 1")
                 username, password, logininfo = cur.fetchone()
@@ -132,6 +132,13 @@ class PokemonFortDB(object):
                         " SET logininfo = %s, " + 
                         " lastused = %s " + 
                         " WHERE username = %s;", (logininfo, time.time(), username))
+        self.commit()
+
+    def clear_searcher_account_login_info(self, username):
+        with self.conn.cursor() as cur:
+            cur.execute("UPDATE searcher_account " + 
+                        " SET logininfo = NULL " + 
+                        " WHERE username = %s;", (username,))
         self.commit()
 
     def add_searcher(self, username):
