@@ -194,6 +194,7 @@ class CellWorker(object):
         self.api_client = pgoapi.PGoApi() 
         self.api_client.new_login = False
         self.api_client.activate_signature("/usr/local/bin/encrypt.so")
+
         self.api_client.set_authentication("ptc", login_info["refresh_token"], username, password)
         self.api_client._auth_provider._access_token = login_info["token"]
         self.api_client.set_api_endpoint( login_info["api_endpoint"] )
@@ -201,20 +202,21 @@ class CellWorker(object):
         self.api_client._auth_provider._login = True
 
 
+
     def init_api_client(self, force_login=False):
         username, password, login_info = db.get_searcher_account()
         logging.getLogger("worker").info("Using user: {0}".format(username))
 
         # TODO: Implment login reuse
-        if True or login_info == None:
+        if login_info == None:
             return self.create_and_login_user(username, password)
 
-        login_info = json.loads(login_info)
-        # Refresh login every 15 minutes
-        if (login_info["login_time"] + 900 < time.time() 
-                or login_info["token"] == None 
-                or force_login) :
-            return self.create_and_login_user(username, password)
+#        login_info = json.loads(login_info)
+#        # Refresh login every 15 minutes
+#        if (login_info["login_time"] + 900 < time.time() 
+#                or login_info["token"] == None 
+#                or force_login) :
+#            return self.create_and_login_user(username, password)
 
         try:
             self.load_login_info(username, password, login_info)
@@ -284,7 +286,7 @@ def main():
     cellid = 9926594313272164352
 
 #    worker.query_cellid(cellid)
-    rcode = worker.query_cell_ids([cellid]*5)
+    rcode = worker.query_cell_ids([cellid])
 
 if __name__ == '__main__':
     DEBUG = True
