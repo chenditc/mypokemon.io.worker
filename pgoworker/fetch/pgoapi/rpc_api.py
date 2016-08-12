@@ -114,7 +114,8 @@ class RpcApi:
             http_response = self._session.post(endpoint, 
                                                data=request_proto_serialized, 
                                                timeout=10, 
-                                               proxies={'https' : 'socks5://chenditc:Proxyrack013001@62.212.82.84:17225'},
+                                               #proxies={'https' : 'socks5://chenditc:Proxyrack013001@62.212.82.84:17225'},
+                                               proxies={'https' : 'socks5://127.0.0.1:8123'},
                                                #                                               proxies={'http':'127.0.0.01:8118', 'https':'127.0.0.01:8118'}
                                                )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
