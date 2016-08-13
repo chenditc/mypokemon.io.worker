@@ -63,6 +63,8 @@ class PokemonFortDB(object):
 
 
     def add_pokemon(self, encounter_id, expire, pokemon_id, latitude, longitude):
+        if expire > 1473173782526:
+            return
         with self.conn.cursor() as cur:
             cur.execute("INSERT INTO pokemon_map (encounter_id, expire, pokemon_id, latitude, longitude)" +  
                         " VALUES (%s, %s, %s, %s, %s)" +

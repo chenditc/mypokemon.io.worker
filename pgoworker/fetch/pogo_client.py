@@ -108,15 +108,11 @@ def query_cellid(cellid, api):
         return SERVER_ERROR 
 
    
-    if response_dict == None or response_dict == False:
+    if not isinstance(response_dict, dict):
         logging.getLogger("worker").info("Failed to call api")
         return API_FAILED 
 
-    if response_dict['status_code'] == 53:
-        return REDIRECT_ENDPOINT 
-
-
-    # logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  
@@ -295,8 +291,10 @@ def main():
     worker = CellWorker() 
     cellid = 9926594313272164352
 
+
 #    worker.query_cellid(cellid)
     rcode = worker.query_cell_ids([cellid])
+
 
 if __name__ == '__main__':
     DEBUG = True
