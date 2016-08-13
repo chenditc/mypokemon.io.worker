@@ -45,21 +45,21 @@ def warm_up(request):
                 "north" : 40.7728,
                 "west" : -74.0082,
                 "target" : "pokemon"}
-    break_down_request(request)
+    break_down_request(request, optional=True)
 
     request = {"east" : -73.927908,
                 "south" : 40.766194,
                 "north" : 40.8094077,
                 "west" : -73.9937221,
                 "target" : "pokemon"}
-    break_down_request(request)
+    break_down_request(request, optional=True)
 
     request = {"east" : -73.9798333,
                 "south" : 40.7014576,
                 "north" : 40.740863,
                 "west" : -74.080372,
                 "target" : "pokemon"}
-    break_down_request(request)
+    break_down_request(request, optional=True)
 
 
     logging.getLogger('worker').info("Wram up request done")

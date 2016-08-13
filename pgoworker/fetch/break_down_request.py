@@ -62,7 +62,16 @@ def filter_duplciate_cell_ids(cell_ids):
             redis_client.setex(redis_query[index], 60, '1')
     return new_cell_ids
 
-def break_down_request(request):
+def break_down_request(request, optional=False):
+    if optional:
+        work_queue.load()
+        queue_length = int(work_queue.attributes['ApproximateNumberOfMessages'])
+        if queue_length > 100:
+            msg = "Still {0} job in the queue, skip request {1}".format(queue_length, request)
+            logger.info(msg)
+            return msg
+
+
     logger.info("Received:{0}".format(request))
     try:
         # Parse cell ids
@@ -99,4 +108,4 @@ if __name__ == "__main__":
              "north" : 40.7728,
              "west" : -74.0082,
              "target" : "pokemon"}
-            )
+            , optional=True)
