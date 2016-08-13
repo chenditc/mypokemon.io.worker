@@ -23,13 +23,16 @@ class PokemonFortDB(object):
 ############################################################################################################
 
     def add_fort(self, fortid, cellid, enabled, latitude, longitude, lure_expire=0, forttype=None, gymteam=None):
-        now = time.time()
-        with self.conn.cursor() as cur:
-            cur.execute("INSERT INTO fort_map (fortid, cellid, enabled, latitude, longitude, forttype, gymteam, lure_expire, last_update)" +  
-                        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" +
-                        " ON CONFLICT (fortid) DO UPDATE SET gymteam = EXCLUDED.gymteam, lure_expire = EXCLUDED.lure_expire, last_update = EXCLUDED.last_update;", 
-                (fortid, cellid, enabled, latitude, longitude, forttype, gymteam, lure_expire, now))
-        self.commit()
+        try:
+            now = time.time()
+            with self.conn.cursor() as cur:
+                cur.execute("INSERT INTO fort_map (fortid, cellid, enabled, latitude, longitude, forttype, gymteam, lure_expire, last_update)" +  
+                            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" +
+                            " ON CONFLICT (fortid) DO UPDATE SET gymteam = EXCLUDED.gymteam, lure_expire = EXCLUDED.lure_expire, last_update = EXCLUDED.last_update;", 
+                    (fortid, cellid, enabled, latitude, longitude, forttype, gymteam, lure_expire, now))
+            self.commit()
+        except:
+            self.conn.rollback()
 
 
     def add_spawn_points(self, cellid, spawn_points):
@@ -65,12 +68,19 @@ class PokemonFortDB(object):
     def add_pokemon(self, encounter_id, expire, pokemon_id, latitude, longitude):
         if expire > 1473173782526:
             return
-        with self.conn.cursor() as cur:
-            cur.execute("INSERT INTO pokemon_map (encounter_id, expire, pokemon_id, latitude, longitude)" +  
-                        " VALUES (%s, %s, %s, %s, %s)" +
-                        " ON CONFLICT (encounter_id, expire, pokemon_id, latitude, longitude) DO NOTHING",
-                (encounter_id, expire, pokemon_id, latitude, longitude))
-        self.commit()
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("INSERT INTO pokemon_map (encounter_id, expire, pokemon_id, latitude, longitude)" +  
+                            " VALUES (%s, %s, %s, %s, %s)" +
+                            " ON CONFLICT (encounter_id, expire, pokemon_id, latitude, longitude) DO NOTHING",
+                    (encounter_id, expire, pokemon_id, latitude, longitude))
+            self.commit()
+        except:
+            self.conn.rollback()
+
+
+
 
 
 
@@ -129,19 +139,28 @@ class PokemonFortDB(object):
 
 
     def update_searcher_account_login_info(self, username, logininfo):
-        with self.conn.cursor() as cur:
-            cur.execute("UPDATE searcher_account " + 
-                        " SET logininfo = %s, " + 
-                        " lastused = %s " + 
-                        " WHERE username = %s;", (logininfo, time.time(), username))
-        self.commit()
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("UPDATE searcher_account " + 
+                            " SET logininfo = %s, " + 
+                            " lastused = %s " + 
+                            " WHERE username = %s;", (logininfo, time.time(), username))
+            self.commit()
+        except:
+            self.conn.rollback()
+
+
 
     def clear_searcher_account_login_info(self, username):
-        with self.conn.cursor() as cur:
-            cur.execute("UPDATE searcher_account " + 
-                        " SET logininfo = NULL " + 
-                        " WHERE username = %s;", (username,))
-        self.commit()
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("UPDATE searcher_account " + 
+                            " SET logininfo = NULL " + 
+                            " WHERE username = %s;", (username,))
+            self.commit()
+        except:
+            self.conn.rollback()
+
 
     def add_searcher(self, username):
         with self.conn.cursor() as cur:
