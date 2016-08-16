@@ -11,6 +11,8 @@ class PokemonFortDB(object):
         rds_user = os.environ.get("RDS_USER", "pokemon_fort")
         rds_password = os.environ.get("RDS_PASSWORD", "pokemon_fort")
         rds_database = os.environ.get("RDS_DATABASE", "pokemon_fort_dev")
+        self.max_account = os.environ.get("MAX_ACCOUNT", "zzzz")
+
 
         self.conn = psycopg2.connect(host=rds_host, 
                                      port=5432, 
@@ -129,8 +131,9 @@ class PokemonFortDB(object):
                 cur.execute("SELECT username, password, logininfo " +  
                             " FROM searcher_account" + 
                             #                            " WHERE username='searchfort40537' " +
+                            " WHERE username < %s " + 
                             " ORDER BY RANDOM()" +  # Visited last hour
-                            " LIMIT 1")
+                            " LIMIT 1", (self.max_account,))
                 username, password, logininfo = cur.fetchone()
                 return (username, password, logininfo) 
             self.commit()
