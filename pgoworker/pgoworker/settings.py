@@ -136,9 +136,11 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
+            'class':'logging.handlers.RotatingFileHandler',
             'filename': '/var/log/django/worker.log',
-            'formatter': 'verbose'
+            'formatter': 'verbose',
+            'maxBytes': 1024*1024*50, # 50 MB
+            'backupCount': 5,
         },
     },
     'loggers': {
