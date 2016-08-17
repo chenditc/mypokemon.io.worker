@@ -109,10 +109,10 @@ def query_cellid(cellid, api):
 
    
     if not isinstance(response_dict, dict):
-        logging.getLogger("worker").info("Failed to call api")
+        logging.getLogger("worker").error("Failed to call api")
         return API_FAILED 
 
-    logging.getLogger("worker").info('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
+    logging.getLogger("worker").debug('Response dictionary: \n\r{}'.format(pprint.PrettyPrinter(indent=2).pformat(response_dict)))
 
     if response_dict['status_code'] > 10:
         logging.getLogger("worker").error("Failed to get map object from cell: {0}, status {1}".format(cellid, response_dict['status_code']))  

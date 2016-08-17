@@ -139,13 +139,14 @@ LOGGING = {
             'class':'logging.handlers.RotatingFileHandler',
             'filename': '/var/log/django/worker.log',
             'formatter': 'verbose',
-            'maxBytes': 1024*1024*50, # 50 MB
+            'maxBytes': 1024*1024*5, # 50 MB
             'backupCount': 5,
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
+            'level' : 'INFO',
         },
         'worker': {
             'handlers': ['file'],
@@ -153,15 +154,15 @@ LOGGING = {
         },
         'requests': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'pgoapi': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'rpc_api': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'search': {
             'handlers': ['file'],
