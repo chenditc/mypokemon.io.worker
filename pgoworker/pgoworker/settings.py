@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '==t=b1*s7a7!4ao)pa^v$n-9-kd76$$=5kfu^)cf2*77e4b^8l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -129,13 +129,9 @@ LOGGING = {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
-        'simple': {
-            'format': '%(levelname)s %(message)s'
-        },
     },
     'handlers': {
-        'file': {
-            'level': 'DEBUG',
+        'logfile': {
             'class':'logging.handlers.RotatingFileHandler',
             'filename': '/var/log/django/worker.log',
             'formatter': 'verbose',
@@ -145,32 +141,39 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level' : 'INFO',
+            'propagate': False,
         },
         'worker': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'requests': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'INFO',
+            'propagate': False,
         },
         'pgoapi': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'INFO',
+            'propagate': False,
         },
         'rpc_api': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'INFO',
+            'propagate': False,
         },
         'search': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'BreakDownRequest': {
-            'handlers': ['file'],
+            'handlers': ['logfile'],
             'level': 'DEBUG',
+            'propagate': False,
         },
 
     }
