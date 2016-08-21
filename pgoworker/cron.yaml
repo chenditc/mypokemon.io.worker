@@ -2,4 +2,4 @@ version: 1
 cron:
  - name: "wram up requests"
    url: "/warm_up"
-   schedule: "* * * * *"
+   schedule: "*/5 * * * *"
