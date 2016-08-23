@@ -58,7 +58,7 @@ def filter_duplciate_cell_ids(cell_ids, sample_size = 100):
     cell_exist = redis_client.mget(redis_query)
 
     cell_states = zip(cell_ids, cell_exist)
-    filtered_cells = [ cell_state[0] for cell_state in cell_states if cell_state[1] != None ]
+    filtered_cells = [ cell_state[0] for cell_state in cell_states if cell_state[1] == None ]
 
     # Sample cells
     sample_size = min(sample_size, len(filtered_cells))
