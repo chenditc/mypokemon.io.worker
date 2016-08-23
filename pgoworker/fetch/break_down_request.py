@@ -63,6 +63,9 @@ def filter_duplciate_cell_ids(cell_ids, sample_size = 100):
     # Sample cells
     sample_size = min(sample_size, len(filtered_cells))
     new_cell_ids = random.sample(filtered_cells, sample_size) 
+
+    for cell_id in new_cell_ids:
+        redis_client.setex("request.{0}".format(cell_id), 60, '1')
     return new_cell_ids
 
 def break_down_request(request, optional=False):
