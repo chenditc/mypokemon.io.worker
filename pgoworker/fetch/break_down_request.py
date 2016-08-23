@@ -52,15 +52,17 @@ def get_cell_ids_from_rect(data):
     cell_ids = [ cell.id() for cell in cells ]
     return cell_ids
 
-def filter_duplciate_cell_ids(cell_ids):
+def filter_duplciate_cell_ids(cell_ids, sample_size = 100):
     # validate it against redis
     redis_query = [ "request.{0}".format(cell_id) for cell_id in cell_ids ]
     cell_exist = redis_client.mget(redis_query)
-    new_cell_ids = []
-    for index in range(len(cell_ids)):
-        if cell_exist[index] == None:
-            new_cell_ids.append(cell_ids[index])
-            redis_client.setex(redis_query[index], 60, '1')
+
+    cell_states = zip(cell_ids, cell_exist)
+    filtered_cells = [ cell_state[0] for cell_state in cell_states if cell_state[1] != None ]
+
+    # Sample cells
+    sample_size = min(sample_size, len(filtered_cells))
+    new_cell_ids = random.sample(filtered_cells, sample_size) 
     return new_cell_ids
 
 def break_down_request(request, optional=False):
@@ -71,8 +73,6 @@ def break_down_request(request, optional=False):
             msg = "Still {0} job in the queue, skip request {1}".format(queue_length, request)
             logger.info(msg)
             return msg
-
-    sample_size = 100
 
     logger.info("Received:{0}".format(request))
     try:
@@ -85,7 +85,6 @@ def break_down_request(request, optional=False):
         # Filter duplicate cells
         cell_ids = filter_duplciate_cell_ids(cell_ids)
         logging.info("{0} cells after filtering".format(len(cell_ids)))
-        cell_ids = random.sample(cell_ids, sample_size) 
     except:
         logger.error("Fail to parse cellid from {0}".format(request))
         logger.error(str(sys.exc_info()))
