@@ -2,6 +2,7 @@ import logging
 import json
 import sys
 import os
+import random
 
 import s2sphere
 import redis
@@ -71,6 +72,7 @@ def break_down_request(request, optional=False):
             logger.info(msg)
             return msg
 
+    sample_size = 100
 
     logger.info("Received:{0}".format(request))
     try:
@@ -83,6 +85,7 @@ def break_down_request(request, optional=False):
         # Filter duplicate cells
         cell_ids = filter_duplciate_cell_ids(cell_ids)
         logging.info("{0} cells after filtering".format(len(cell_ids)))
+        cell_ids = random.sample(cell_ids, sample_size) 
     except:
         logger.error("Fail to parse cellid from {0}".format(request))
         logger.error(str(sys.exc_info()))
