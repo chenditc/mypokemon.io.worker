@@ -115,7 +115,9 @@ class RpcApi:
                                                data=request_proto_serialized, 
                                                timeout=10, 
                                                #proxies={'https' : 'socks5://chenditc:Proxyrack013001@62.212.82.84:17225'},
-                                               proxies={'https' : 'socks5://127.0.0.1:8123'},
+                                               #proxies={'https' : 'socks5://127.0.0.1:8123'},
+                                               proxies={'https' : 'socks5://chenditc:Proxyrack013001@37.58.52.43:17753'},
+
                                                #                                               proxies={'http':'127.0.0.01:8118', 'https':'127.0.0.01:8118'}
                                                )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
