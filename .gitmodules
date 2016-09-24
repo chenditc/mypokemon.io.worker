@@ -1,0 +1,3 @@
+[submodule "pgoworker/fetch/mock_pgoapi"]
+	path = pgoworker/fetch/mock_pgoapi
+	url = https://github.com/chenditc/mock_pgoapi.git
